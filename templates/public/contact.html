@@ -1,0 +1,165 @@
+{% extends "base.html" %}
+
+{% block title %}Contato - Escola Sol Maior{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row">
+        <div class="col-12 text-center mb-5">
+            <h1 class="display-4 fw-bold">
+                <i class="fas fa-envelope me-3"></i>Entre em Contato
+            </h1>
+            <p class="lead text-muted">
+                Tire suas dúvidas ou agende uma visita. Estamos aqui para ajudar!
+            </p>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <div class="card shadow border-0">
+                <div class="card-body p-5">
+                    <form method="POST">
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                {{ form.name.label(class="form-label fw-bold") }}
+                                {{ form.name(class="form-control" + (" is-invalid" if form.name.errors else "")) }}
+                                {% if form.name.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.name.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                {{ form.email.label(class="form-label fw-bold") }}
+                                {{ form.email(class="form-control" + (" is-invalid" if form.email.errors else "")) }}
+                                {% if form.email.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.email.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                {{ form.phone.label(class="form-label fw-bold") }}
+                                {{ form.phone(class="form-control" + (" is-invalid" if form.phone.errors else "")) }}
+                                {% if form.phone.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.phone.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                {{ form.subject.label(class="form-label fw-bold") }}
+                                {{ form.subject(class="form-control" + (" is-invalid" if form.subject.errors else "")) }}
+                                {% if form.subject.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.subject.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="mb-4">
+                            {{ form.message.label(class="form-label fw-bold") }}
+                            {{ form.message(class="form-control", rows="5", placeholder="Conte-nos como podemos ajudar...") }}
+                            {% if form.message.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.message.errors %}{{ error }}{% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="fas fa-paper-plane me-2"></i>Enviar Mensagem
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Informações de Contato -->
+    <div class="row mt-5">
+        <div class="col-lg-4 mb-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center">
+                    <i class="fas fa-map-marker-alt fa-3x text-primary mb-3"></i>
+                    <h5 class="card-title">Endereço</h5>
+                    <p class="card-text">
+                        Rua das Artes, 123<br>
+                        Centro Musical<br>
+                        São Paulo - SP<br>
+                        CEP: 01234-567
+                    </p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-4 mb-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center">
+                    <i class="fas fa-phone fa-3x text-success mb-3"></i>
+                    <h5 class="card-title">Telefone</h5>
+                    <p class="card-text">
+                        <a href="tel:+5511999999999" class="text-decoration-none">
+                            (11) 99999-9999
+                        </a><br>
+                        <a href="tel:+551133334444" class="text-decoration-none">
+                            (11) 3333-4444
+                        </a><br>
+                        <small class="text-muted">Segunda à Sexta: 8h às 20h<br>Sábado: 8h às 17h</small>
+                    </p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-4 mb-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center">
+                    <i class="fas fa-envelope fa-3x text-info mb-3"></i>
+                    <h5 class="card-title">E-mail</h5>
+                    <p class="card-text">
+                        <a href="mailto:contato@solmaior.com" class="text-decoration-none">
+                            contato@solmaior.com
+                        </a><br>
+                        <a href="mailto:secretaria@solmaior.com" class="text-decoration-none">
+                            secretaria@solmaior.com
+                        </a><br>
+                        <small class="text-muted">Respondemos em até 24h</small>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Redes Sociais -->
+    <div class="row mt-4">
+        <div class="col-12 text-center">
+            <h5 class="mb-3">Nos siga nas redes sociais</h5>
+            <div class="d-flex justify-content-center gap-3">
+                <a href="#" class="btn btn-outline-primary">
+                    <i class="fab fa-facebook-f me-2"></i>Facebook
+                </a>
+                <a href="#" class="btn btn-outline-info">
+                    <i class="fab fa-instagram me-2"></i>Instagram
+                </a>
+                <a href="#" class="btn btn-outline-danger">
+                    <i class="fab fa-youtube me-2"></i>YouTube
+                </a>
+                <a href="#" class="btn btn-outline-success">
+                    <i class="fab fa-whatsapp me-2"></i>WhatsApp
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

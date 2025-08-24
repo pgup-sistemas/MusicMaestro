@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+
+{% block title %}Portal do Professor - Escola Sol Maior{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="mt-4 mb-4">
+            <i class="fas fa-chalkboard-teacher me-2"></i>Portal do Professor
+        </h1>
+        <p class="lead">Bem-vindo, {{ current_user.full_name }}!</p>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5><i class="fas fa-book me-2"></i>Meus Cursos</h5>
+            </div>
+            <div class="card-body">
+                {% if courses %}
+                    <div class="row">
+                        {% for course in courses %}
+                        <div class="col-md-6 mb-3">
+                            <div class="card border-success">
+                                <div class="card-body">
+                                    <h6 class="card-title">{{ course.name }}</h6>
+                                    <p class="card-text">
+                                        {% if course.instrument %}
+                                            <small class="text-muted">
+                                                <i class="fas fa-music me-1"></i>{{ course.instrument }}
+                                            </small><br>
+                                        {% endif %}
+                                        {% if course.level %}
+                                            <span class="badge bg-info">{{ course.level.title() }}</span>
+                                        {% endif %}
+                                    </p>
+                                    <p class="mb-1">
+                                        <strong>Mensalidade:</strong> {{ course.monthly_price|currency }}
+                                    </p>
+                                    <p class="mb-0">
+                                        <strong>Vagas:</strong> {{ course.max_students }}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-book fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">Nenhum curso atribuído</h5>
+                        <p class="text-muted">Entre em contato com a administração para ter cursos atribuídos.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-calendar me-2"></i>Minha Agenda</h5>
+            </div>
+            <div class="card-body">
+                {% if schedules %}
+                    <div class="table-responsive">
+                        <table class="table table-sm table-striped">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>Dia</th>
+                                    <th>Horário</th>
+                                    <th>Curso</th>
+                                    <th>Sala</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for schedule in schedules %}
+                                <tr>
+                                    <td>
+                                        {% set days = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo'] %}
+                                        {{ days[schedule.day_of_week] }}
+                                    </td>
+                                    <td>
+                                        {{ schedule.start_time.strftime('%H:%M') }} - {{ schedule.end_time.strftime('%H:%M') }}
+                                    </td>
+                                    <td>{{ schedule.course.name }}</td>
+                                    <td>{{ schedule.room.name }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-calendar-plus fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">Nenhuma aula agendada</h5>
+                        <p class="text-muted">Entre em contato com a administração para agendar suas aulas.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5><i class="fas fa-users me-2"></i>Meus Alunos</h5>
+            </div>
+            <div class="card-body">
+                <div class="text-center py-3">
+                    <i class="fas fa-users fa-2x text-muted mb-2"></i>
+                    <p class="text-muted mb-0">Lista de alunos em desenvolvimento</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-cog me-2"></i>Ações Rápidas</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="#" class="btn btn-outline-primary">
+                        <i class="fas fa-users me-2"></i>Ver Alunos
+                    </a>
+                    <a href="#" class="btn btn-outline-info">
+                        <i class="fas fa-calendar me-2"></i>Minha Agenda
+                    </a>
+                    <a href="#" class="btn btn-outline-success">
+                        <i class="fas fa-upload me-2"></i>Upload Material
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

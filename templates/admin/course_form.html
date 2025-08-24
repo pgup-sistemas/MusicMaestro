@@ -1,0 +1,278 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }} - Escola Sol Maior{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mt-4 mb-4">
+            <h1><i class="fas fa-book me-2"></i>{{ title }}</h1>
+            <a href="{{ url_for('admin.courses') }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left me-2"></i>Voltar
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-10 mx-auto">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-book me-2"></i>Dados do Curso</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    {{ form.hidden_tag() }}
+                    
+                    <!-- Informações Básicas -->
+                    <div class="row">
+                        <div class="col-12">
+                            <h6 class="text-primary border-bottom pb-2 mb-3">
+                                <i class="fas fa-info-circle me-2"></i>Informações Básicas
+                            </h6>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-8 mb-3">
+                            {{ form.name.label(class="form-label") }}
+                            {{ form.name(class="form-control" + (" is-invalid" if form.name.errors else ""), placeholder="Ex: Piano Iniciante") }}
+                            {% if form.name.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.name.errors %}{{ error }}{% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="col-md-4 mb-3">
+                            {{ form.instrument.label(class="form-label") }}
+                            {{ form.instrument(class="form-control", placeholder="Ex: Piano") }}
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        {{ form.description.label(class="form-label") }}
+                        {{ form.description(class="form-control", rows="3", placeholder="Descreva o curso, metodologia, objetivos e o que o aluno irá aprender...") }}
+                    </div>
+                    
+                    <!-- Configurações do Curso -->
+                    <div class="row">
+                        <div class="col-12">
+                            <h6 class="text-success border-bottom pb-2 mb-3 mt-4">
+                                <i class="fas fa-cog me-2"></i>Configurações do Curso
+                            </h6>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            {{ form.level.label(class="form-label") }}
+                            {{ form.level(class="form-select" + (" is-invalid" if form.level.errors else "")) }}
+                            {% if form.level.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.level.errors %}{{ error }}{% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="col-md-4 mb-3">
+                            {{ form.duration_months.label(class="form-label") }}
+                            <div class="input-group">
+                                {{ form.duration_months(class="form-control", placeholder="12") }}
+                                <span class="input-group-text">meses</span>
+                                {% if form.duration_months.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.duration_months.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div class="form-text">Duração estimada do curso</div>
+                        </div>
+                        
+                        <div class="col-md-4 mb-3">
+                            {{ form.max_students.label(class="form-label") }}
+                            <div class="input-group">
+                                {{ form.max_students(class="form-control" + (" is-invalid" if form.max_students.errors else "")) }}
+                                <span class="input-group-text">
+                                    <i class="fas fa-users"></i>
+                                </span>
+                                {% if form.max_students.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.max_students.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div class="form-text">Máximo de alunos por turma</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Dados Financeiros e Professor -->
+                    <div class="row">
+                        <div class="col-12">
+                            <h6 class="text-warning border-bottom pb-2 mb-3 mt-4">
+                                <i class="fas fa-dollar-sign me-2"></i>Financeiro e Professor
+                            </h6>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            {{ form.monthly_price.label(class="form-label") }}
+                            <div class="input-group">
+                                <span class="input-group-text">R$</span>
+                                {{ form.monthly_price(class="form-control" + (" is-invalid" if form.monthly_price.errors else ""), placeholder="0,00") }}
+                                {% if form.monthly_price.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.monthly_price.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            {{ form.teacher_id.label(class="form-label") }}
+                            {{ form.teacher_id(class="form-select" + (" is-invalid" if form.teacher_id.errors else "")) }}
+                            {% if form.teacher_id.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.teacher_id.errors %}{{ error }}{% endfor %}
+                                </div>
+                            {% endif %}
+                            <div class="form-text">Professor responsável pelo curso</div>
+                        </div>
+                        
+                        <div class="col-md-2 mb-3">
+                            <label class="form-label">Status</label>
+                            <div class="form-check form-switch">
+                                {{ form.is_active(class="form-check-input") }}
+                                {{ form.is_active.label(class="form-check-label") }}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Preview do Curso -->
+                    <div class="card bg-light mb-4">
+                        <div class="card-body">
+                            <h6 class="card-title">
+                                <i class="fas fa-eye me-2"></i>Preview do Curso
+                            </h6>
+                            <div class="row">
+                                <div class="col-md-8">
+                                    <h5 class="mb-2">
+                                        <span id="preview-name" class="text-muted">Digite o nome do curso</span>
+                                        <span id="preview-level" class="badge bg-info ms-2">Nível</span>
+                                    </h5>
+                                    <p class="mb-2">
+                                        <i class="fas fa-music me-2"></i>
+                                        <span id="preview-instrument" class="text-muted">Instrumento</span>
+                                    </p>
+                                    <p class="mb-2">
+                                        <i class="fas fa-users me-2"></i>
+                                        Máximo de <span id="preview-max-students">0</span> alunos
+                                    </p>
+                                    <p class="mb-0">
+                                        <i class="fas fa-calendar me-2"></i>
+                                        Duração: <span id="preview-duration">0</span> meses
+                                    </p>
+                                </div>
+                                <div class="col-md-4 text-md-end">
+                                    <h4 class="text-success mb-2">
+                                        R$ <span id="preview-price">0,00</span>/mês
+                                    </h4>
+                                    <p class="mb-1">
+                                        <strong>Professor:</strong><br>
+                                        <span id="preview-teacher" class="text-muted">Selecione um professor</span>
+                                    </p>
+                                    <span id="preview-status" class="badge bg-success">Ativo</span>
+                                </div>
+                            </div>
+                            <hr>
+                            <p class="mb-0">
+                                <strong>Descrição:</strong><br>
+                                <span id="preview-description" class="text-muted">Digite a descrição do curso</span>
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between">
+                        <a href="{{ url_for('admin.courses') }}" class="btn btn-secondary">
+                            <i class="fas fa-times me-2"></i>Cancelar
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-2"></i>Salvar Curso
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Preview em tempo real
+document.addEventListener('DOMContentLoaded', function() {
+    const nameInput = document.getElementById('name');
+    const instrumentInput = document.getElementById('instrument');
+    const descriptionInput = document.getElementById('description');
+    const levelInput = document.getElementById('level');
+    const durationInput = document.getElementById('duration_months');
+    const priceInput = document.getElementById('monthly_price');
+    const maxStudentsInput = document.getElementById('max_students');
+    const teacherInput = document.getElementById('teacher_id');
+    const activeInput = document.getElementById('is_active');
+    
+    function updatePreview() {
+        document.getElementById('preview-name').textContent = nameInput.value || 'Digite o nome do curso';
+        document.getElementById('preview-instrument').textContent = instrumentInput.value || 'Instrumento';
+        document.getElementById('preview-description').textContent = descriptionInput.value || 'Digite a descrição do curso';
+        document.getElementById('preview-duration').textContent = durationInput.value || '0';
+        document.getElementById('preview-max-students').textContent = maxStudentsInput.value || '0';
+        
+        // Level badge
+        const levelBadge = document.getElementById('preview-level');
+        if (levelInput.value) {
+            const levelText = levelInput.options[levelInput.selectedIndex].text;
+            levelBadge.textContent = levelText;
+            levelBadge.style.display = 'inline';
+        } else {
+            levelBadge.style.display = 'none';
+        }
+        
+        // Price formatting
+        const price = parseFloat(priceInput.value) || 0;
+        document.getElementById('preview-price').textContent = price.toFixed(2).replace('.', ',');
+        
+        // Teacher
+        const teacherPreview = document.getElementById('preview-teacher');
+        if (teacherInput.value && teacherInput.value !== '0') {
+            teacherPreview.textContent = teacherInput.options[teacherInput.selectedIndex].text;
+        } else {
+            teacherPreview.textContent = 'Selecione um professor';
+        }
+        
+        // Status
+        const statusBadge = document.getElementById('preview-status');
+        if (activeInput.checked) {
+            statusBadge.className = 'badge bg-success';
+            statusBadge.textContent = 'Ativo';
+        } else {
+            statusBadge.className = 'badge bg-danger';
+            statusBadge.textContent = 'Inativo';
+        }
+    }
+    
+    // Event listeners
+    nameInput.addEventListener('input', updatePreview);
+    instrumentInput.addEventListener('input', updatePreview);
+    descriptionInput.addEventListener('input', updatePreview);
+    levelInput.addEventListener('change', updatePreview);
+    durationInput.addEventListener('input', updatePreview);
+    priceInput.addEventListener('input', updatePreview);
+    maxStudentsInput.addEventListener('input', updatePreview);
+    teacherInput.addEventListener('change', updatePreview);
+    activeInput.addEventListener('change', updatePreview);
+    
+    // Initialize preview
+    updatePreview();
+});
+</script>
+{% endblock %}

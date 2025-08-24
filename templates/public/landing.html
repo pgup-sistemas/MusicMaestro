@@ -1,0 +1,327 @@
+{% extends "base.html" %}
+
+{% block title %}Escola Sol Maior - Transformando vidas através da música{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="hero-section bg-primary text-white py-5">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-lg-6">
+                <h1 class="display-4 fw-bold mb-4">
+                    <i class="fas fa-music me-3"></i>Escola Sol Maior
+                </h1>
+                <p class="lead mb-4">
+                    Transformando vidas através da música há mais de 10 anos. 
+                    Descubra seu talento musical com nossos professores especializados 
+                    e metodologia única de ensino.
+                </p>
+                <div class="d-flex gap-3">
+                    <a href="{{ url_for('public.experimental_class') }}" class="btn btn-warning btn-lg">
+                        <i class="fas fa-play-circle me-2"></i>Aula Experimental Grátis
+                    </a>
+                    <a href="{{ url_for('public.contact') }}" class="btn btn-outline-light btn-lg">
+                        <i class="fas fa-phone me-2"></i>Entre em Contato
+                    </a>
+                </div>
+            </div>
+            <div class="col-lg-6 text-center">
+                <i class="fas fa-music hero-icon" style="font-size: 12rem; opacity: 0.3;"></i>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Instrumentos Section -->
+<section class="py-5">
+    <div class="container">
+        <div class="text-center mb-5">
+            <h2 class="display-5 fw-bold">Nossos Cursos</h2>
+            <p class="lead text-muted">Aprenda com os melhores professores da região</p>
+        </div>
+        
+        <div class="row">
+            <div class="col-md-4 mb-4">
+                <div class="card h-100 shadow-sm border-0">
+                    <div class="card-body text-center">
+                        <i class="fas fa-music fa-3x text-primary mb-3"></i>
+                        <h5 class="card-title">Piano</h5>
+                        <p class="card-text">
+                            Do iniciante ao avançado. Aprenda técnica, teoria e repertório clássico e popular.
+                        </p>
+                        <a href="{{ url_for('public.experimental_class') }}" class="btn btn-outline-primary">
+                            Experimentar
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-4 mb-4">
+                <div class="card h-100 shadow-sm border-0">
+                    <div class="card-body text-center">
+                        <i class="fas fa-guitar fa-3x text-success mb-3"></i>
+                        <h5 class="card-title">Violão & Guitarra</h5>
+                        <p class="card-text">
+                            Técnicas modernas e clássicas. Rock, blues, bossa nova e muito mais.
+                        </p>
+                        <a href="{{ url_for('public.experimental_class') }}" class="btn btn-outline-success">
+                            Experimentar
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-4 mb-4">
+                <div class="card h-100 shadow-sm border-0">
+                    <div class="card-body text-center">
+                        <i class="fas fa-microphone fa-3x text-info mb-3"></i>
+                        <h5 class="card-title">Canto</h5>
+                        <p class="card-text">
+                            Desenvolva sua voz com técnicas profissionais de respiração e projeção vocal.
+                        </p>
+                        <a href="{{ url_for('public.experimental_class') }}" class="btn btn-outline-info">
+                            Experimentar
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-4 mb-4">
+                <div class="card h-100 shadow-sm border-0">
+                    <div class="card-body text-center">
+                        <i class="fas fa-drum fa-3x text-warning mb-3"></i>
+                        <h5 class="card-title">Bateria</h5>
+                        <p class="card-text">
+                            Ritmo e coordenação motora. Do básico aos solos mais complexos.
+                        </p>
+                        <a href="{{ url_for('public.experimental_class') }}" class="btn btn-outline-warning">
+                            Experimentar
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-4 mb-4">
+                <div class="card h-100 shadow-sm border-0">
+                    <div class="card-body text-center">
+                        <i class="fas fa-music fa-3x text-danger mb-3"></i>
+                        <h5 class="card-title">Violino</h5>
+                        <p class="card-text">
+                            Técnica erudita e popular. Desenvolva a sensibilidade musical.
+                        </p>
+                        <a href="{{ url_for('public.experimental_class') }}" class="btn btn-outline-danger">
+                            Experimentar
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-4 mb-4">
+                <div class="card h-100 shadow-sm border-0">
+                    <div class="card-body text-center">
+                        <i class="fas fa-book fa-3x text-secondary mb-3"></i>
+                        <h5 class="card-title">Teoria Musical</h5>
+                        <p class="card-text">
+                            Fundamentos teóricos para uma formação musical completa.
+                        </p>
+                        <a href="{{ url_for('public.experimental_class') }}" class="btn btn-outline-secondary">
+                            Experimentar
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Por que escolher Section -->
+<section class="py-5 bg-light">
+    <div class="container">
+        <div class="text-center mb-5">
+            <h2 class="display-5 fw-bold">Por que escolher a Sol Maior?</h2>
+        </div>
+        
+        <div class="row">
+            <div class="col-lg-4 mb-4">
+                <div class="d-flex align-items-start">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-chalkboard-teacher fa-2x text-primary"></i>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h5>Professores Qualificados</h5>
+                        <p class="text-muted">
+                            Equipe formada por músicos profissionais com experiência em ensino e performance.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-lg-4 mb-4">
+                <div class="d-flex align-items-start">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-home fa-2x text-success"></i>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h5>Ambiente Acolhedor</h5>
+                        <p class="text-muted">
+                            Espaço especialmente projetado para o aprendizado musical, com salas acusticamente tratadas.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-lg-4 mb-4">
+                <div class="d-flex align-items-start">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-calendar fa-2x text-info"></i>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h5>Horários Flexíveis</h5>
+                        <p class="text-muted">
+                            Aulas adaptadas à sua rotina, de segunda a sábado, manhã, tarde e noite.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-lg-4 mb-4">
+                <div class="d-flex align-items-start">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-certificate fa-2x text-warning"></i>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h5>Certificados</h5>
+                        <p class="text-muted">
+                            Reconhecimento oficial do seu aprendizado com certificados digitais validados.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-lg-4 mb-4">
+                <div class="d-flex align-items-start">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-users fa-2x text-danger"></i>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h5>Comunidade Musical</h5>
+                        <p class="text-muted">
+                            Faça parte de uma comunidade apaixonada por música, com recitais e apresentações.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-lg-4 mb-4">
+                <div class="d-flex align-items-start">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-mobile-alt fa-2x text-secondary"></i>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h5>Plataforma Digital</h5>
+                        <p class="text-muted">
+                            Acesse materiais, agenda e acompanhe seu progresso através da nossa plataforma online.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Call to Action Section -->
+<section class="py-5 bg-primary text-white">
+    <div class="container text-center">
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <h2 class="display-5 fw-bold mb-4">Pronto para começar sua jornada musical?</h2>
+                <p class="lead mb-4">
+                    Agende sua aula experimental gratuita e descubra como a música pode transformar sua vida.
+                </p>
+                <div class="d-flex justify-content-center gap-3">
+                    <a href="{{ url_for('public.experimental_class') }}" class="btn btn-warning btn-lg">
+                        <i class="fas fa-play-circle me-2"></i>Aula Experimental Grátis
+                    </a>
+                    <a href="tel:+5511999999999" class="btn btn-outline-light btn-lg">
+                        <i class="fas fa-phone me-2"></i>(11) 99999-9999
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Depoimentos Section -->
+<section class="py-5">
+    <div class="container">
+        <div class="text-center mb-5">
+            <h2 class="display-5 fw-bold">O que nossos alunos dizem</h2>
+        </div>
+        
+        <div class="row">
+            <div class="col-lg-4 mb-4">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body text-center">
+                        <div class="mb-3">
+                            <i class="fas fa-star text-warning"></i>
+                            <i class="fas fa-star text-warning"></i>
+                            <i class="fas fa-star text-warning"></i>
+                            <i class="fas fa-star text-warning"></i>
+                            <i class="fas fa-star text-warning"></i>
+                        </div>
+                        <p class="card-text">
+                            "Sempre quis aprender piano e aqui encontrei o ambiente perfeito. 
+                            Os professores são muito pacientes e dedicados."
+                        </p>
+                        <footer class="blockquote-footer">
+                            <cite title="Source Title">Maria Santos</cite>
+                        </footer>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-lg-4 mb-4">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body text-center">
+                        <div class="mb-3">
+                            <i class="fas fa-star text-warning"></i>
+                            <i class="fas fa-star text-warning"></i>
+                            <i class="fas fa-star text-warning"></i>
+                            <i class="fas fa-star text-warning"></i>
+                            <i class="fas fa-star text-warning"></i>
+                        </div>
+                        <p class="card-text">
+                            "Meu filho de 8 anos adora as aulas de violão. 
+                            O progresso dele tem sido incrível e ele está sempre animado para as aulas."
+                        </p>
+                        <footer class="blockquote-footer">
+                            <cite title="Source Title">João Silva</cite>
+                        </footer>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-lg-4 mb-4">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body text-center">
+                        <div class="mb-3">
+                            <i class="fas fa-star text-warning"></i>
+                            <i class="fas fa-star text-warning"></i>
+                            <i class="fas fa-star text-warning"></i>
+                            <i class="fas fa-star text-warning"></i>
+                            <i class="fas fa-star text-warning"></i>
+                        </div>
+                        <p class="card-text">
+                            "Escola com excelente estrutura e professores altamente qualificados. 
+                            Recomendo para todos que querem aprender música de verdade."
+                        </p>
+                        <footer class="blockquote-footer">
+                            <cite title="Source Title">Ana Oliveira</cite>
+                        </footer>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

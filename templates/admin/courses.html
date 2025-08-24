@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+
+{% block title %}Gestão de Cursos - Escola Sol Maior{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mt-4 mb-4">
+            <h1><i class="fas fa-book me-2"></i>Gestão de Cursos</h1>
+            <a href="{{ url_for('admin.add_course') }}" class="btn btn-primary">
+                <i class="fas fa-plus me-2"></i>Adicionar Curso
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-list me-2"></i>Lista de Cursos</h5>
+            </div>
+            <div class="card-body">
+                {% if courses %}
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>Nome</th>
+                                    <th>Instrumento</th>
+                                    <th>Nível</th>
+                                    <th>Professor</th>
+                                    <th>Mensalidade</th>
+                                    <th>Vagas</th>
+                                    <th>Status</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for course, teacher, user in courses %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ course.name }}</strong>
+                                        {% if course.duration_months %}
+                                            <br><small class="text-muted">{{ course.duration_months }} meses</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ course.instrument or '-' }}</td>
+                                    <td>
+                                        {% if course.level %}
+                                            <span class="badge bg-info">{{ course.level.title() }}</span>
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if user %}
+                                            {{ user.full_name }}
+                                        {% else %}
+                                            <span class="text-muted">Sem professor</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ course.monthly_price|currency }}</td>
+                                    <td>
+                                        <i class="fas fa-users me-1"></i>{{ course.max_students }}
+                                    </td>
+                                    <td>
+                                        {% if course.is_active %}
+                                            <span class="badge bg-success">Ativo</span>
+                                        {% else %}
+                                            <span class="badge bg-danger">Inativo</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm" role="group">
+                                            <button class="btn btn-outline-primary" title="Editar">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                            <button class="btn btn-outline-info" title="Ver Alunos">
+                                                <i class="fas fa-users"></i>
+                                            </button>
+                                            <button class="btn btn-outline-warning" title="Materiais">
+                                                <i class="fas fa-folder"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-book fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">Nenhum curso cadastrado</h5>
+                        <p class="text-muted">Clique no botão "Adicionar Curso" para começar.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

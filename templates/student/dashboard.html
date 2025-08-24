@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+
+{% block title %}Portal do Aluno - Escola Sol Maior{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="mt-4 mb-4">
+            <i class="fas fa-user-graduate me-2"></i>Portal do Aluno
+        </h1>
+        <p class="lead">Bem-vindo, {{ current_user.full_name }}!</p>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5><i class="fas fa-book me-2"></i>Meus Cursos</h5>
+            </div>
+            <div class="card-body">
+                {% if enrollments %}
+                    <div class="row">
+                        {% for enrollment in enrollments %}
+                        <div class="col-md-6 mb-3">
+                            <div class="card border-primary">
+                                <div class="card-body">
+                                    <h6 class="card-title">{{ enrollment.course.name }}</h6>
+                                    <p class="card-text">
+                                        <small class="text-muted">
+                                            {% if enrollment.course.instrument %}
+                                                <i class="fas fa-music me-1"></i>{{ enrollment.course.instrument }}
+                                            {% endif %}
+                                        </small>
+                                    </p>
+                                    <p class="mb-1">
+                                        <strong>Mensalidade:</strong> {{ enrollment.monthly_payment|currency }}
+                                    </p>
+                                    <p class="mb-0">
+                                        <strong>Status:</strong> 
+                                        <span class="badge bg-success">{{ enrollment.status.title() }}</span>
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-book fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">Nenhum curso matriculado</h5>
+                        <p class="text-muted">Entre em contato com a secretaria para se matricular em um curso.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-calendar me-2"></i>Próximas Aulas</h5>
+            </div>
+            <div class="card-body">
+                <div class="text-center py-4">
+                    <i class="fas fa-calendar-plus fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">Agenda em desenvolvimento</h5>
+                    <p class="text-muted">Em breve você poderá visualizar suas próximas aulas aqui.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5><i class="fas fa-credit-card me-2"></i>Situação Financeira</h5>
+            </div>
+            <div class="card-body">
+                {% if recent_payments %}
+                    {% for payment in recent_payments[:3] %}
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <div>
+                            <small class="text-muted">{{ payment.reference_month.strftime('%m/%Y') }}</small>
+                            <br>{{ payment.amount|currency }}
+                        </div>
+                        <div>
+                            {% if payment.status == 'paid' %}
+                                <span class="badge bg-success">Pago</span>
+                            {% elif payment.status == 'pending' %}
+                                <span class="badge bg-warning">Pendente</span>
+                            {% elif payment.status == 'overdue' %}
+                                <span class="badge bg-danger">Vencido</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% if not loop.last %}<hr>{% endif %}
+                    {% endfor %}
+                    
+                    <div class="text-center mt-3">
+                        <a href="{{ url_for('student.payments') }}" class="btn btn-outline-primary btn-sm">
+                            Ver Todos os Pagamentos
+                        </a>
+                    </div>
+                {% else %}
+                    <div class="text-center py-3">
+                        <i class="fas fa-dollar-sign fa-2x text-muted mb-2"></i>
+                        <p class="text-muted mb-0">Nenhum pagamento registrado</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-download me-2"></i>Ações Rápidas</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{{ url_for('student.materials') }}" class="btn btn-outline-primary">
+                        <i class="fas fa-folder me-2"></i>Meus Materiais
+                    </a>
+                    <a href="#" class="btn btn-outline-info">
+                        <i class="fas fa-calendar me-2"></i>Minha Agenda
+                    </a>
+                    <a href="#" class="btn btn-outline-success">
+                        <i class="fas fa-certificate me-2"></i>Certificados
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

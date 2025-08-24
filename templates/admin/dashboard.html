@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard Administrativo - Escola Sol Maior{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="mt-4 mb-4">
+            <i class="fas fa-tachometer-alt me-2"></i>Dashboard Administrativo
+        </h1>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-3 mb-4">
+        <div class="card border-primary">
+            <div class="card-body text-center">
+                <i class="fas fa-users fa-3x text-primary mb-3"></i>
+                <h5 class="card-title">Alunos</h5>
+                <h2 class="text-primary">{{ total_students }}</h2>
+                <a href="{{ url_for('admin.students') }}" class="btn btn-primary btn-sm">Ver Todos</a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-4">
+        <div class="card border-success">
+            <div class="card-body text-center">
+                <i class="fas fa-chalkboard-teacher fa-3x text-success mb-3"></i>
+                <h5 class="card-title">Professores</h5>
+                <h2 class="text-success">{{ total_teachers }}</h2>
+                <a href="{{ url_for('admin.teachers') }}" class="btn btn-success btn-sm">Ver Todos</a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-4">
+        <div class="card border-info">
+            <div class="card-body text-center">
+                <i class="fas fa-book fa-3x text-info mb-3"></i>
+                <h5 class="card-title">Cursos Ativos</h5>
+                <h2 class="text-info">{{ total_courses }}</h2>
+                <a href="{{ url_for('admin.courses') }}" class="btn btn-info btn-sm">Ver Todos</a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-4">
+        <div class="card border-warning">
+            <div class="card-body text-center">
+                <i class="fas fa-exclamation-triangle fa-3x text-warning mb-3"></i>
+                <h5 class="card-title">Pagamentos Pendentes</h5>
+                <h2 class="text-warning">{{ pending_payments }}</h2>
+                <a href="{{ url_for('admin.finances') }}" class="btn btn-warning btn-sm">Ver Todos</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-chart-line me-2"></i>Ações Rápidas</h5>
+            </div>
+            <div class="card-body">
+                <div class="list-group list-group-flush">
+                    <a href="{{ url_for('admin.add_student') }}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-user-plus me-2"></i>Adicionar Novo Aluno
+                    </a>
+                    <a href="{{ url_for('admin.add_teacher') }}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-chalkboard-teacher me-2"></i>Adicionar Novo Professor
+                    </a>
+                    <a href="{{ url_for('admin.add_course') }}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-book me-2"></i>Criar Novo Curso
+                    </a>
+                    <a href="{{ url_for('admin.add_room') }}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-door-open me-2"></i>Cadastrar Nova Sala
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-calendar me-2"></i>Agenda de Hoje</h5>
+            </div>
+            <div class="card-body">
+                <p class="text-muted">
+                    <i class="fas fa-info-circle me-2"></i>
+                    Implementar listagem de aulas do dia atual
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

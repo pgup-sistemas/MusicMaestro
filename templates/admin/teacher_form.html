@@ -1,0 +1,188 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }} - Escola Sol Maior{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mt-4 mb-4">
+            <h1><i class="fas fa-chalkboard-teacher me-2"></i>{{ title }}</h1>
+            <a href="{{ url_for('admin.teachers') }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left me-2"></i>Voltar
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-chalkboard-teacher me-2"></i>Dados do Professor</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    {{ form.hidden_tag() }}
+                    
+                    <!-- Dados de Login -->
+                    <div class="row">
+                        <div class="col-12">
+                            <h6 class="text-primary border-bottom pb-2 mb-3">
+                                <i class="fas fa-key me-2"></i>Dados de Acesso
+                            </h6>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            {{ form.username.label(class="form-label") }}
+                            {{ form.username(class="form-control" + (" is-invalid" if form.username.errors else "")) }}
+                            {% if form.username.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.username.errors %}{{ error }}{% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            {{ form.email.label(class="form-label") }}
+                            {{ form.email(class="form-control" + (" is-invalid" if form.email.errors else "")) }}
+                            {% if form.email.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.email.errors %}{{ error }}{% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            {{ form.password.label(class="form-label") }}
+                            {{ form.password(class="form-control" + (" is-invalid" if form.password.errors else "")) }}
+                            <div class="form-text">Se deixar em branco, será definida como "123456"</div>
+                            {% if form.password.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.password.errors %}{{ error }}{% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <!-- Dados Pessoais -->
+                    <div class="row">
+                        <div class="col-12">
+                            <h6 class="text-primary border-bottom pb-2 mb-3 mt-4">
+                                <i class="fas fa-user me-2"></i>Dados Pessoais
+                            </h6>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-8 mb-3">
+                            {{ form.full_name.label(class="form-label") }}
+                            {{ form.full_name(class="form-control" + (" is-invalid" if form.full_name.errors else "")) }}
+                            {% if form.full_name.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.full_name.errors %}{{ error }}{% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="col-md-4 mb-3">
+                            {{ form.phone.label(class="form-label") }}
+                            {{ form.phone(class="form-control", placeholder="(11) 99999-9999") }}
+                            {% if form.phone.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.phone.errors %}{{ error }}{% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <!-- Dados Profissionais -->
+                    <div class="row">
+                        <div class="col-12">
+                            <h6 class="text-success border-bottom pb-2 mb-3 mt-4">
+                                <i class="fas fa-music me-2"></i>Dados Profissionais
+                            </h6>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-8 mb-3">
+                            {{ form.specialization.label(class="form-label") }}
+                            {{ form.specialization(class="form-control", placeholder="Piano, Violão, Canto, Teoria Musical...") }}
+                        </div>
+                        
+                        <div class="col-md-4 mb-3">
+                            {{ form.hourly_rate.label(class="form-label") }}
+                            <div class="input-group">
+                                <span class="input-group-text">R$</span>
+                                {{ form.hourly_rate(class="form-control", placeholder="0,00") }}
+                                {% if form.hourly_rate.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {% for error in form.hourly_rate.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        {{ form.bio.label(class="form-label") }}
+                        {{ form.bio(class="form-control", rows="4", placeholder="Biografia profissional, experiência, estilo de ensino...") }}
+                    </div>
+                    
+                    <div class="mb-3">
+                        {{ form.qualifications.label(class="form-label") }}
+                        {{ form.qualifications(class="form-control", rows="3", placeholder="Formação acadêmica, certificações, cursos...") }}
+                    </div>
+                    
+                    <!-- Dados Bancários -->
+                    <div class="row">
+                        <div class="col-12">
+                            <h6 class="text-warning border-bottom pb-2 mb-3 mt-4">
+                                <i class="fas fa-credit-card me-2"></i>Dados Bancários
+                            </h6>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            {{ form.bank_name.label(class="form-label") }}
+                            {{ form.bank_name(class="form-control", placeholder="Ex: Banco do Brasil") }}
+                        </div>
+                        
+                        <div class="col-md-4 mb-3">
+                            {{ form.bank_agency.label(class="form-label") }}
+                            {{ form.bank_agency(class="form-control", placeholder="Ex: 1234-5") }}
+                        </div>
+                        
+                        <div class="col-md-4 mb-3">
+                            {{ form.bank_account.label(class="form-label") }}
+                            {{ form.bank_account(class="form-control", placeholder="Ex: 12345678-9") }}
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-4">
+                            {{ form.pix_key.label(class="form-label") }}
+                            {{ form.pix_key(class="form-control", placeholder="CPF, e-mail, telefone ou chave aleatória") }}
+                            <div class="form-text">Chave PIX para pagamentos rápidos</div>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between">
+                        <a href="{{ url_for('admin.teachers') }}" class="btn btn-secondary">
+                            <i class="fas fa-times me-2"></i>Cancelar
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-2"></i>Salvar Professor
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
