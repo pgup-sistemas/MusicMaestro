@@ -1,0 +1,128 @@
+
+
+Sistema de Gestão da Escola de Música Sol Maior — Especificação Técnica (spec.md)
+🎯 Objetivo do Sistema
+Centralizar a gestão acadêmica, financeira e administrativa da Escola de Música Sol Maior, oferecendo ferramentas para professores, alunos e administração, com recursos de comunicação, agenda, certificados e pagamentos online.
+
+⚙️ Funcionalidades Principais
+1. Gestão de Alunos
+    • Cadastro completo (dados pessoais, contatos, responsável legal se menor de idade).
+    • Histórico de cursos, salas e pagamentos.
+    • Controle de frequência e desempenho.
+    • Área do aluno com acesso a materiais, agenda, notas e certificados.
+    • Regras de Negócio:
+        ◦ Um aluno pode estar matriculado em um ou mais cursos simultaneamente.
+        ◦ Cada matrícula gera vínculo com curso, professor e sala específicos.
+        ◦ Possibilidade de aplicar descontos por curso (ver seção de pagamentos).
+2. Gestão de Professores
+    • Cadastro de professores (dados pessoais e bancários).
+    • Controle de carga horária e agenda.
+    • Relacionamento com turmas, cursos e salas.
+    • Visualização de disponibilidade e aulas remarcadas.
+3. Gestão de Salas
+    • Cadastro de salas com capacidade e equipamentos.
+    • Visualização de salas ocupadas em tempo real.
+    • Alocação de horários/aulas/provas/recitais.
+4. Gestão de Cursos
+    • Cadastro de cursos (instrumento, teoria, canto, etc.).
+    • Definição de professores responsáveis.
+    • Gestão de turmas, vagas e horários.
+    • Módulos extras (workshops, masterclasses, cursos online).
+5. Gestão de Pagamentos
+    • Emissão de mensalidades e faturas.
+    • Histórico financeiro individual.
+    • Integração com gateway de pagamento (PIX, cartão, boleto).
+    • Notificações automáticas de vencimento.
+    • Aplicação de Descontos:
+        ◦ Desconto por campanha promocional (ex.: 10% no primeiro mês).
+        ◦ Desconto por pós-pagamento em dia ou antecipado.
+        ◦ Bolsa parcial (definição de %).
+        ◦ Desconto familiar (ex.: irmãos matriculados).
+        ◦ Desconto aplicado a nível de curso específico ou sobre o total mensal.
+    • Relacionamento direto com matrícula: cada curso pode ter um valor bruto e um valor líquido (após descontos).
+6. Envio de Arquivos e Materiais
+    • Upload de apostilas (PDF), áudios (MP3) e vídeos.
+    • Organização por curso/turma.
+    • Acesso seguro pelo portal do aluno.
+    • Controle de quem baixou/acessou os materiais.
+7. Agenda e Programação
+    • Agenda de aulas: individual e coletiva.
+    • Agenda de provas: definição de datas, salas e avaliadores.
+    • Agenda de recitais e apresentações: programação pública, com reserva de sala.
+    • Remarcação de aulas/provas pelo professor ou secretaria.
+    • Agendamento de aula experimental para novos alunos.
+    • Integração com Google Calendar/Outlook (opcional).
+    • Dashboard para visualizar salas ocupadas, professores disponíveis e horários livres.
+8. Notificações e Comunicação
+    • Notificações push (web/mobile).
+    • E-mails automáticos (pagamento, matrícula, lembretes de aula/prova).
+    • Integração com WhatsApp/Telegram para lembretes de agenda e cobranças.
+9. Gestão de Usuários e Permissões
+    • Perfis: Administrador, Secretaria, Professor, Aluno.
+    • Controle de acessos por função.
+    • Logs de atividades e auditoria.
+10. Landing Page Pública
+    • Página institucional da Escola Sol Maior.
+    • Avisos e agenda pública de recitais e apresentações.
+    • Formulário de contato e pré-matrícula.
+    • Agendamento de aulas experimentais online.
+    • Área de validação de certificados digitais via código/QR Code.
+11. Certificados de Conclusão
+    • Emissão Manual: ao término de um curso, o sistema gera certificado somente após aprovação da secretaria/professor.
+    • Dados Personalizados: nome do aluno, curso, carga horária, datas de início e término, assinatura digital do diretor/professor.
+    • Modelo Personalizável: escola pode definir layout com logotipo, cores e texto padrão.
+    • Validação Online: código único de autenticação (QR Code ou código alfanumérico).
+    • Histórico do Aluno: certificados ficam disponíveis no portal do aluno para download.
+    • Tipos de Certificados:
+        ◦ Cursos regulares.
+        ◦ Workshops e masterclasses.
+        ◦ Participação em recitais/apresentações especiais.
+
+📊 Funcionalidades Essenciais Adicionais
+    1. Relatórios e Dashboards
+        ◦ Financeiro: inadimplência, faturamento mensal.
+        ◦ Acadêmico: frequência, desempenho de alunos.
+        ◦ Agenda: salas ocupadas, aulas remarcadas.
+    2. Contrato Digital
+        ◦ Geração e assinatura online no ato da matrícula.
+        ◦ Histórico arquivado no perfil do aluno.
+
+🖥️ Stack Tecnológica (sugestão)
+    • Backend: Python Flask (API REST).
+    • Frontend Web: Flask + Bootstrap (painel administrativo e portal do aluno).
+    • Mobile (fase 2): Flet/Flutter para alunos.
+    • Banco de Dados: PostgreSQL.
+    • Integrações:
+        ◦ Gateway de pagamento (Mercado Pago, Stripe, Pagar.me, Gerencianet).
+        ◦ Serviço de e-mail (SendGrid, SES ou SMTP).
+        ◦ WhatsApp Business API/Twilio/Z-API.
+
+🔐 Requisitos de Segurança
+    • Autenticação com 2FA opcional.
+    • Criptografia de senhas (bcrypt/argon2).
+    • Logs de auditoria de ações.
+    • Expiração de sessão automática.
+    • Certificados digitais com QR Code para autenticação pública.
+
+🚀 Roadmap de Entregas
+    1. MVP:
+        ◦ Gestão de alunos, cursos, professores, salas.
+        ◦ Agenda básica (aulas, aulas experimentais).
+        ◦ Upload de materiais.
+        ◦ Gestão de pagamentos (sem descontos complexos).
+        ◦ Notificações por e-mail.
+        ◦ Landing page inicial.
+    2. Fase 2:
+        ◦ Gateway de pagamento.
+        ◦ Notificações via WhatsApp.
+        ◦ Agenda avançada (provas, recitais, remarcações).
+        ◦ Relatórios financeiros.
+        ◦ Certificados com aprovação manual.
+        ◦ Aplicação de descontos por matrícula/curso.
+    3. Fase 3:
+        ◦ App mobile para alunos.
+        ◦ Contrato digital.
+        ◦ Integração com calendários externos.
+        ◦ Validação pública de certificados.
+        ◦ Regras avançadas de desconto (família, bolsa, promoções automáticas).
+
