@@ -31,84 +31,109 @@
                         {% if current_user.user_type in ['admin', 'secretary'] %}
                             <li class="nav-item">
                                 <a class="nav-link" href="{{ url_for('admin.dashboard') }}">
-                                    <i class="fas fa-tachometer-alt me-1"></i>Dashboard
+                                    <i class="fas fa-tachometer-alt me-2"></i>Dashboard
                                 </a>
                             </li>
                             <li class="nav-item dropdown">
                                 <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
-                                    <i class="fas fa-users me-1"></i>Gestão
+                                    <i class="fas fa-users me-2"></i>Gestão de Pessoas
                                 </a>
                                 <ul class="dropdown-menu">
-                                    <li><a class="dropdown-item" href="{{ url_for('admin.students') }}">Alunos</a></li>
-                                    <li><a class="dropdown-item" href="{{ url_for('admin.teachers') }}">Professores</a></li>
-                                    <li><a class="dropdown-item" href="{{ url_for('admin.courses') }}">Cursos</a></li>
-                                    <li><a class="dropdown-item" href="{{ url_for('admin.rooms') }}">Salas</a></li>
-                                    <li><hr class="dropdown-divider"></li>
-                                    <li><a class="dropdown-item" href="{{ url_for('admin.schedule') }}">
-                                    <i class="fas fa-clock me-2"></i>Horários
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" href="{{ url_for('admin.calendar') }}">
-                                    <i class="fas fa-calendar me-2"></i>Calendário
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" href="{{ url_for('admin.experimental_classes') }}">
-                                    <i class="fas fa-play-circle me-2"></i>Aulas Experimentais
-                                </a>
-                            </li>
-                            <li class="nav-item dropdown">
-                                <a class="nav-link dropdown-toggle" href="#" id="reportsDropdown" role="button" data-bs-toggle="dropdown">
-                                    <i class="fas fa-chart-bar"></i> Relatórios
-                                </a>
-                                <ul class="dropdown-menu">
-                                    <li><a class="dropdown-item" href="{{ url_for('admin.reports') }}">
-                                        <i class="fas fa-file-alt"></i> Relatório Geral
+                                    <li><a class="dropdown-item" href="{{ url_for('admin.students') }}">
+                                        <i class="fas fa-graduation-cap me-2"></i>Alunos
                                     </a></li>
-                                    <li><a class="dropdown-item" href="{{ url_for('admin.financial_summary') }}">
-                                        <i class="fas fa-chart-line"></i> Resumo Financeiro
+                                    <li><a class="dropdown-item" href="{{ url_for('admin.teachers') }}">
+                                        <i class="fas fa-chalkboard-teacher me-2"></i>Professores
                                     </a></li>
                                     <li><hr class="dropdown-divider"></li>
                                     <li><a class="dropdown-item" href="{{ url_for('admin.quick_enroll') }}">
-                                        <i class="fas fa-user-plus"></i> Matrícula Rápida
+                                        <i class="fas fa-user-plus me-2"></i>Matrícula Rápida
                                     </a></li>
                                 </ul>
                             </li>
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                                    <i class="fas fa-music me-2"></i>Acadêmico
+                                </a>
+                                <ul class="dropdown-menu">
+                                    <li><a class="dropdown-item" href="{{ url_for('admin.courses') }}">
+                                        <i class="fas fa-book me-2"></i>Cursos
+                                    </a></li>
+                                    <li><a class="dropdown-item" href="{{ url_for('admin.rooms') }}">
+                                        <i class="fas fa-door-open me-2"></i>Salas
+                                    </a></li>
+                                    <li><a class="dropdown-item" href="{{ url_for('admin.schedule') }}">
+                                        <i class="fas fa-clock me-2"></i>Horários
+                                    </a></li>
+                                    <li><a class="dropdown-item" href="{{ url_for('admin.calendar') }}">
+                                        <i class="fas fa-calendar me-2"></i>Calendário
+                                    </a></li>
+                                </ul>
+                            </li>
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                                    <i class="fas fa-dollar-sign me-2"></i>Financeiro
+                                </a>
+                                <ul class="dropdown-menu">
+                                    <li><a class="dropdown-item" href="{{ url_for('admin.finances') }}">
+                                        <i class="fas fa-credit-card me-2"></i>Pagamentos
+                                    </a></li>
+                                    <li><a class="dropdown-item" href="{{ url_for('admin.financial_summary') }}">
+                                        <i class="fas fa-chart-line me-2"></i>Resumo Financeiro
+                                    </a></li>
+                                </ul>
+                            </li>
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                                    <i class="fas fa-chart-bar me-2"></i>Relatórios
+                                </a>
+                                <ul class="dropdown-menu">
+                                    <li><a class="dropdown-item" href="{{ url_for('admin.reports') }}">
+                                        <i class="fas fa-file-alt me-2"></i>Relatório Geral
+                                    </a></li>
+                                    <li><a class="dropdown-item" href="{{ url_for('admin.experimental_classes') }}">
+                                        <i class="fas fa-play-circle me-2"></i>Aulas Experimentais
+                                    </a></li>
                                 </ul>
                             </li>
                         {% elif current_user.user_type == 'student' %}
                             <li class="nav-item">
                                 <a class="nav-link" href="{{ url_for('student.dashboard') }}">
-                                    <i class="fas fa-tachometer-alt me-1"></i>Meu Painel
+                                    <i class="fas fa-tachometer-alt me-2"></i>Meu Painel
                                 </a>
                             </li>
                             <li class="nav-item">
                                 <a class="nav-link" href="{{ url_for('student.materials') }}">
-                                    <i class="fas fa-book me-1"></i>Materiais
+                                    <i class="fas fa-book me-2"></i>Materiais
                                 </a>
                             </li>
                         {% elif current_user.user_type == 'teacher' %}
                             <li class="nav-item">
                                 <a class="nav-link" href="{{ url_for('teacher.dashboard') }}">
-                                    <i class="fas fa-tachometer-alt me-1"></i>Meu Painel
+                                    <i class="fas fa-tachometer-alt me-2"></i>Meu Painel
                                 </a>
                             </li>
                         {% endif %}
                     {% else %}
                         <li class="nav-item">
-                            <a class="nav-link" href="{{ url_for('public.landing') }}">Início</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="{{ url_for('public.contact') }}">Contato</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="{{ url_for('public.help') }}">
-                                <i class="fas fa-question-circle me-1"></i>Ajuda
+                            <a class="nav-link" href="{{ url_for('public.landing') }}">
+                                <i class="fas fa-home me-2"></i>Início
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="{{ url_for('public.experimental_class') }}">Aula Experimental</a>
+                            <a class="nav-link" href="{{ url_for('public.contact') }}">
+                                <i class="fas fa-envelope me-2"></i>Contato
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('public.experimental_class') }}">
+                                <i class="fas fa-play-circle me-2"></i>Aula Experimental
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('public.help') }}">
+                                <i class="fas fa-question-circle me-2"></i>Ajuda
+                            </a>
                         </li>
                     {% endif %}
                 </ul>
