@@ -1,0 +1,254 @@
+{% extends "base.html" %}
+
+{% block title %}Alunos do Curso - Escola Sol Maior{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mt-4 mb-4">
+            <h1><i class="fas fa-users me-2"></i>Alunos - {{ course.name }}</h1>
+            <div>
+                <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#enrollStudentModal">
+                    <i class="fas fa-user-plus me-2"></i>Matricular Aluno
+                </button>
+                <a href="{{ url_for('admin.view_course', course_id=course.id) }}" class="btn btn-info">
+                    <i class="fas fa-eye me-2"></i>Ver Curso
+                </a>
+                <a href="{{ url_for('admin.courses') }}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left me-2"></i>Voltar
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h3 class="text-primary">{{ enrollments|length }}</h3>
+                <p class="text-muted mb-0">Alunos Matriculados</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h3 class="text-success">{{ course.max_students - enrollments|length }}</h3>
+                <p class="text-muted mb-0">Vagas Disponíveis</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h3 class="text-warning">{{ course.monthly_price|currency }}</h3>
+                <p class="text-muted mb-0">Mensalidade</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                {% set occupancy = (enrollments|length / course.max_students * 100) if course.max_students > 0 else 0 %}
+                <h3 class="text-info">{{ "%.0f"|format(occupancy) }}%</h3>
+                <p class="text-muted mb-0">Ocupação</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-list me-2"></i>Lista de Alunos Matriculados</h5>
+            </div>
+            <div class="card-body">
+                {% if enrollments %}
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>Aluno</th>
+                                    <th>E-mail</th>
+                                    <th>Telefone</th>
+                                    <th>Data de Matrícula</th>
+                                    <th>Status</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for enrollment, student, user in enrollments %}
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="avatar avatar-sm me-2">
+                                                <div class="avatar-initial bg-primary rounded-circle">
+                                                    {{ user.full_name[0].upper() }}
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <strong>{{ user.full_name }}</strong>
+                                                {% if not user.is_active %}
+                                                    <span class="badge bg-danger ms-2">Inativo</span>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>{{ user.email }}</td>
+                                    <td>{{ user.phone|phone if user.phone else '-' }}</td>
+                                    <td>{{ enrollment.enrollment_date|date_br }}</td>
+                                    <td>
+                                        {% if enrollment.status == 'active' %}
+                                            <span class="badge bg-success">Ativo</span>
+                                        {% elif enrollment.status == 'completed' %}
+                                            <span class="badge bg-info">Concluído</span>
+                                        {% elif enrollment.status == 'cancelled' %}
+                                            <span class="badge bg-danger">Cancelado</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">{{ enrollment.status.title() }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm" role="group">
+                                            <a href="{{ url_for('admin.view_student', student_id=student.id) }}" class="btn btn-outline-info" title="Ver Perfil">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            {% if enrollment.status == 'active' %}
+                                                <button class="btn btn-outline-warning" title="Suspender Matrícula" onclick="changeEnrollmentStatus({{ enrollment.id }}, 'suspended')">
+                                                    <i class="fas fa-pause"></i>
+                                                </button>
+                                                <button class="btn btn-outline-danger" title="Cancelar Matrícula" onclick="changeEnrollmentStatus({{ enrollment.id }}, 'cancelled')">
+                                                    <i class="fas fa-ban"></i>
+                                                </button>
+                                            {% elif enrollment.status == 'suspended' %}
+                                                <button class="btn btn-outline-success" title="Reativar Matrícula" onclick="changeEnrollmentStatus({{ enrollment.id }}, 'active')">
+                                                    <i class="fas fa-play"></i>
+                                                </button>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-users fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">Nenhum aluno matriculado</h5>
+                        <p class="text-muted">Este curso ainda não possui alunos matriculados.</p>
+                        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#enrollStudentModal">
+                            <i class="fas fa-user-plus me-2"></i>Matricular Primeiro Aluno
+                        </button>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para Matricular Aluno -->
+<div class="modal fade" id="enrollStudentModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-user-plus me-2"></i>Matricular Aluno</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="enrollForm" action="{{ url_for('admin.enroll_student', course_id=course.id) }}" method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="student_id" class="form-label">Selecionar Aluno</label>
+                        <select class="form-select" id="student_id" name="student_id" required>
+                            <option value="">Escolha um aluno...</option>
+                            <!-- Populated dynamically -->
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="enrollment_date" class="form-label">Data de Matrícula</label>
+                        <input type="date" class="form-control" id="enrollment_date" name="enrollment_date" value="{{ today }}" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Matricular</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+.avatar {
+    width: 32px;
+    height: 32px;
+}
+
+.avatar-initial {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    color: white;
+    font-size: 14px;
+}
+</style>
+
+<script>
+// Load available students when modal opens
+document.getElementById('enrollStudentModal').addEventListener('show.bs.modal', function() {
+    fetch('/admin/api/available-students/{{ course.id }}')
+        .then(response => response.json())
+        .then(data => {
+            const select = document.getElementById('student_id');
+            select.innerHTML = '<option value="">Escolha um aluno...</option>';
+            data.students.forEach(student => {
+                const option = document.createElement('option');
+                option.value = student.id;
+                option.textContent = student.name;
+                select.appendChild(option);
+            });
+        })
+        .catch(error => {
+            console.error('Erro ao carregar alunos:', error);
+        });
+});
+
+// Change enrollment status
+function changeEnrollmentStatus(enrollmentId, status) {
+    const statusText = {
+        'active': 'reativar',
+        'suspended': 'suspender',
+        'cancelled': 'cancelar'
+    };
+    
+    if (confirm(`Tem certeza que deseja ${statusText[status]} esta matrícula?`)) {
+        fetch(`/admin/enrollment/${enrollmentId}/status`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token() }}'
+            },
+            body: JSON.stringify({ status: status })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Erro ao alterar status da matrícula');
+            }
+        })
+        .catch(error => {
+            console.error('Erro:', error);
+            alert('Erro ao alterar status da matrícula');
+        });
+    }
+}
+</script>
+{% endblock %}

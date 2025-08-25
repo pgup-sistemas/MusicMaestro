@@ -1,0 +1,231 @@
+{% extends "base.html" %}
+
+{% block title %}Detalhes do Pagamento - Escola Sol Maior{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mt-4 mb-4">
+            <h1><i class="fas fa-dollar-sign me-2"></i>Pagamento #{{ payment.id }}</h1>
+            <div>
+                <a href="{{ url_for('admin.edit_payment', payment_id=payment.id) }}" class="btn btn-warning">
+                    <i class="fas fa-edit me-2"></i>Editar
+                </a>
+                {% if payment.status == 'pending' %}
+                    <a href="{{ url_for('admin.mark_payment_paid', payment_id=payment.id) }}" class="btn btn-success" onclick="return confirm('Marcar este pagamento como pago?')">
+                        <i class="fas fa-check me-2"></i>Marcar como Pago
+                    </a>
+                {% endif %}
+                <a href="{{ url_for('admin.finances') }}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left me-2"></i>Voltar
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-info-circle me-2"></i>Informações do Pagamento</h5>
+            </div>
+            <div class="card-body">
+                <table class="table table-borderless">
+                    <tr>
+                        <td><strong>ID:</strong></td>
+                        <td>#{{ payment.id }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Valor:</strong></td>
+                        <td class="h5 text-primary">{{ payment.amount|currency }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Status:</strong></td>
+                        <td>
+                            {% if payment.status == 'paid' %}
+                                <span class="badge bg-success fs-6">Pago</span>
+                            {% elif payment.status == 'pending' %}
+                                <span class="badge bg-warning fs-6">Pendente</span>
+                            {% elif payment.status == 'overdue' %}
+                                <span class="badge bg-danger fs-6">Vencido</span>
+                            {% else %}
+                                <span class="badge bg-secondary fs-6">{{ payment.status.title() }}</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><strong>Data de Vencimento:</strong></td>
+                        <td>{{ payment.due_date|date_br }}</td>
+                    </tr>
+                    {% if payment.payment_date %}
+                    <tr>
+                        <td><strong>Data do Pagamento:</strong></td>
+                        <td>{{ payment.payment_date|date_br }}</td>
+                    </tr>
+                    {% endif %}
+                    <tr>
+                        <td><strong>Mês de Referência:</strong></td>
+                        <td>{{ payment.reference_month|title if payment.reference_month else '-' }}</td>
+                    </tr>
+                    {% if payment.payment_method %}
+                    <tr>
+                        <td><strong>Forma de Pagamento:</strong></td>
+                        <td>{{ payment.payment_method }}</td>
+                    </tr>
+                    {% endif %}
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-user me-2"></i>Informações do Aluno</h5>
+            </div>
+            <div class="card-body">
+                <table class="table table-borderless">
+                    <tr>
+                        <td><strong>Nome:</strong></td>
+                        <td>{{ user.full_name }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>E-mail:</strong></td>
+                        <td>{{ user.email }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Telefone:</strong></td>
+                        <td>{{ user.phone|phone if user.phone else '-' }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Data de Registro:</strong></td>
+                        <td>{{ student.registration_date|date_br }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Status do Aluno:</strong></td>
+                        <td>
+                            {% if user.is_active %}
+                                <span class="badge bg-success">Ativo</span>
+                            {% else %}
+                                <span class="badge bg-danger">Inativo</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                </table>
+                
+                <div class="mt-3">
+                    <a href="{{ url_for('admin.view_student', student_id=student.id) }}" class="btn btn-outline-primary btn-sm">
+                        <i class="fas fa-eye me-1"></i>Ver Perfil do Aluno
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if payment.notes %}
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-sticky-note me-2"></i>Observações</h5>
+            </div>
+            <div class="card-body">
+                <p>{{ payment.notes }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-history me-2"></i>Histórico</h5>
+            </div>
+            <div class="card-body">
+                <div class="timeline">
+                    <div class="timeline-item">
+                        <div class="timeline-marker"></div>
+                        <div class="timeline-content">
+                            <h6 class="timeline-title">Pagamento Criado</h6>
+                            <p class="timeline-text text-muted small">
+                                Pagamento registrado no sistema<br>
+                                <strong>Valor:</strong> {{ payment.amount|currency }}<br>
+                                <strong>Vencimento:</strong> {{ payment.due_date|date_br }}
+                            </p>
+                        </div>
+                    </div>
+                    
+                    {% if payment.payment_date %}
+                    <div class="timeline-item">
+                        <div class="timeline-marker bg-success"></div>
+                        <div class="timeline-content">
+                            <h6 class="timeline-title">Pagamento Confirmado</h6>
+                            <p class="timeline-text text-muted small">
+                                Pagamento confirmado em {{ payment.payment_date|date_br }}
+                                {% if payment.payment_method %}
+                                <br><strong>Forma:</strong> {{ payment.payment_method }}
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.timeline {
+    position: relative;
+    padding-left: 3rem;
+}
+
+.timeline::before {
+    content: '';
+    position: absolute;
+    left: 1rem;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: #dee2e6;
+}
+
+.timeline-item {
+    position: relative;
+    margin-bottom: 2rem;
+}
+
+.timeline-marker {
+    position: absolute;
+    left: -2.5rem;
+    top: 0.5rem;
+    width: 1rem;
+    height: 1rem;
+    border-radius: 50%;
+    background: #6c757d;
+    border: 3px solid #fff;
+    box-shadow: 0 0 0 3px #dee2e6;
+}
+
+.timeline-content {
+    background: #f8f9fa;
+    padding: 1rem;
+    border-radius: 0.5rem;
+    border-left: 3px solid #007bff;
+}
+
+.timeline-title {
+    margin-bottom: 0.5rem;
+    color: #495057;
+}
+
+.timeline-text {
+    margin-bottom: 0;
+}
+</style>
+{% endblock %}

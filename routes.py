@@ -1,6 +1,6 @@
 import os
 from datetime import datetime, date
-from flask import Blueprint, render_template, request, redirect, url_for, flash, session, current_app, send_from_directory
+from flask import Blueprint, render_template, request, redirect, url_for, flash, session, current_app, send_from_directory, jsonify
 from flask_login import login_user, logout_user, login_required, current_user
 from werkzeug.security import check_password_hash, generate_password_hash
 from werkzeug.utils import secure_filename
@@ -359,18 +359,6 @@ def view_teacher(teacher_id):
     return render_template('admin/teacher_detail.html', teacher=teacher, user=user,
                          courses=courses, schedules=schedules)
 
-@admin.route('/teacher/schedule/<int:teacher_id>')
-@login_required
-def teacher_schedule(teacher_id):
-    if current_user.user_type not in ['admin', 'secretary']:
-        flash('Acesso negado.', 'danger')
-        return redirect(url_for('main.index'))
-    
-    teacher = Teacher.query.get_or_404(teacher_id)
-    user = User.query.get_or_404(teacher.user_id)
-    schedules = db.session.query(Schedule, Course, Room).join(Course, Schedule.course_id == Course.id).join(Room, Schedule.room_id == Room.id).filter(Schedule.teacher_id == teacher.id).all()
-    
-    return render_template('admin/teacher_schedule.html', teacher=teacher, user=user, schedules=schedules)
 
 @admin.route('/rooms')
 @login_required
@@ -519,43 +507,6 @@ def edit_course(course_id):
     
     return render_template('admin/course_form.html', form=form, title='Editar Curso')
 
-@admin.route('/course/view/<int:course_id>')
-@login_required
-def view_course(course_id):
-    if current_user.user_type not in ['admin', 'secretary']:
-        flash('Acesso negado.', 'danger')
-        return redirect(url_for('main.index'))
-    
-    course = Course.query.get_or_404(course_id)
-    enrollments = db.session.query(Enrollment, Student, User).join(Student, Enrollment.student_id == Student.id).join(User, Student.user_id == User.id).filter(Enrollment.course_id == course.id).all()
-    materials = Material.query.filter_by(course_id=course.id).all()
-    schedules = Schedule.query.filter_by(course_id=course.id).all()
-    
-    return render_template('admin/course_detail.html', course=course, enrollments=enrollments, materials=materials, schedules=schedules)
-
-@admin.route('/course/students/<int:course_id>')
-@login_required
-def course_students(course_id):
-    if current_user.user_type not in ['admin', 'secretary']:
-        flash('Acesso negado.', 'danger')
-        return redirect(url_for('main.index'))
-    
-    course = Course.query.get_or_404(course_id)
-    enrollments = db.session.query(Enrollment, Student, User).join(Student, Enrollment.student_id == Student.id).join(User, Student.user_id == User.id).filter(Enrollment.course_id == course.id).all()
-    
-    return render_template('admin/course_students.html', course=course, enrollments=enrollments)
-
-@admin.route('/course/materials/<int:course_id>')
-@login_required
-def course_materials(course_id):
-    if current_user.user_type not in ['admin', 'secretary']:
-        flash('Acesso negado.', 'danger')
-        return redirect(url_for('main.index'))
-    
-    course = Course.query.get_or_404(course_id)
-    materials = Material.query.filter_by(course_id=course.id).all()
-    
-    return render_template('admin/course_materials.html', course=course, materials=materials)
 
 @admin.route('/schedule')
 @login_required
@@ -586,15 +537,14 @@ def add_schedule():
     form.room_id.choices = [(0, 'Selecione uma sala')] + [(r.id, r.name) for r in rooms]
     
     if form.validate_on_submit():
-        schedule = Schedule(
-            course_id=form.course_id.data,
-            teacher_id=form.teacher_id.data,
-            room_id=form.room_id.data,
-            day_of_week=form.day_of_week.data,
-            start_time=form.start_time.data,
-            end_time=form.end_time.data,
-            is_active=True
-        )
+        schedule = Schedule()
+        schedule.course_id = form.course_id.data
+        schedule.teacher_id = form.teacher_id.data
+        schedule.room_id = form.room_id.data
+        schedule.day_of_week = form.day_of_week.data
+        schedule.start_time = form.start_time.data
+        schedule.end_time = form.end_time.data
+        schedule.is_active = True
         db.session.add(schedule)
         db.session.commit()
         
@@ -674,16 +624,15 @@ def add_payment():
     form.student_id.choices = [(0, 'Selecione um aluno')] + [(s.Student.id, s.User.full_name) for s in students]
     
     if form.validate_on_submit():
-        payment = Payment(
-            student_id=form.student_id.data,
-            amount=form.amount.data,
-            due_date=form.due_date.data,
-            payment_date=form.payment_date.data,
-            status=form.status.data,
-            payment_method=form.payment_method.data,
-            reference_month=form.reference_month.data,
-            notes=form.notes.data
-        )
+        payment = Payment()
+        payment.student_id = form.student_id.data
+        payment.amount = form.amount.data
+        payment.due_date = form.due_date.data
+        payment.payment_date = form.payment_date.data
+        payment.status = form.status.data
+        payment.payment_method = form.payment_method.data
+        payment.reference_month = form.reference_month.data
+        payment.notes = form.notes.data
         db.session.add(payment)
         db.session.commit()
         
@@ -893,3 +842,365 @@ def experimental_class():
 @login_required
 def uploaded_file(filename):
     return send_from_directory(current_app.config['UPLOAD_FOLDER'], filename)
+
+# Additional admin routes for course management
+@admin.route('/course/<int:course_id>')
+@login_required
+def view_course(course_id):
+    if current_user.user_type not in ['admin', 'secretary', 'teacher']:
+        flash('Acesso negado.', 'danger')
+        return redirect(url_for('main.index'))
+    
+    course = Course.query.get_or_404(course_id)
+    
+    # Get enrollments with student and user data
+    enrollments = db.session.query(Enrollment, Student, User).join(
+        Student, Enrollment.student_id == Student.id
+    ).join(
+        User, Student.user_id == User.id
+    ).filter(Enrollment.course_id == course_id).all()
+    
+    # Get course materials
+    materials = Material.query.filter_by(course_id=course_id).all()
+    
+    # Get course schedules
+    schedules = Schedule.query.filter_by(course_id=course_id).all()
+    
+    return render_template('admin/course_detail.html', 
+                         course=course, 
+                         enrollments=enrollments,
+                         materials=materials,
+                         schedules=schedules)
+
+@admin.route('/course/<int:course_id>/students')
+@login_required
+def course_students(course_id):
+    if current_user.user_type not in ['admin', 'secretary']:
+        flash('Acesso negado.', 'danger')
+        return redirect(url_for('main.index'))
+    
+    course = Course.query.get_or_404(course_id)
+    
+    # Get enrollments with student and user data
+    enrollments = db.session.query(Enrollment, Student, User).join(
+        Student, Enrollment.student_id == Student.id
+    ).join(
+        User, Student.user_id == User.id
+    ).filter(Enrollment.course_id == course_id).all()
+    
+    today = date.today().strftime('%Y-%m-%d')
+    
+    return render_template('admin/course_students.html', 
+                         course=course, 
+                         enrollments=enrollments,
+                         today=today)
+
+@admin.route('/course/<int:course_id>/materials')
+@login_required
+def course_materials(course_id):
+    if current_user.user_type not in ['admin', 'secretary', 'teacher']:
+        flash('Acesso negado.', 'danger')
+        return redirect(url_for('main.index'))
+    
+    course = Course.query.get_or_404(course_id)
+    
+    # Check if teacher is accessing their own course
+    if current_user.user_type == 'teacher':
+        teacher = Teacher.query.filter_by(user_id=current_user.id).first()
+        if not teacher or course.teacher_id != teacher.id:
+            flash('Você só pode acessar materiais dos seus próprios cursos.', 'danger')
+            return redirect(url_for('teacher.teacher_dashboard'))
+    
+    # Get course materials with uploader info
+    materials = db.session.query(Material, User).outerjoin(
+        User, Material.uploaded_by_id == User.id
+    ).filter(Material.course_id == course_id).order_by(Material.uploaded_at.desc()).all()
+    
+    return render_template('admin/course_materials.html', 
+                         course=course, 
+                         materials=[m.Material for m, u in materials])
+
+@admin.route('/teacher/<int:teacher_id>/schedule')
+@login_required
+def teacher_schedule(teacher_id):
+    if current_user.user_type not in ['admin', 'secretary']:
+        flash('Acesso negado.', 'danger')
+        return redirect(url_for('main.index'))
+    
+    teacher = Teacher.query.get_or_404(teacher_id)
+    user = User.query.get(teacher.user_id)
+    
+    # Get teacher's schedules with course and room info
+    schedules = db.session.query(Schedule, Course, Room).join(
+        Course, Schedule.course_id == Course.id
+    ).outerjoin(
+        Room, Schedule.room_id == Room.id
+    ).filter(Schedule.teacher_id == teacher_id).order_by(
+        Schedule.day_of_week, Schedule.start_time
+    ).all()
+    
+    return render_template('admin/teacher_schedule.html', 
+                         teacher=teacher, 
+                         user=user,
+                         schedules=schedules)
+
+# API Routes for AJAX calls
+@admin.route('/api/available-students/<int:course_id>')
+@login_required
+def api_available_students(course_id):
+    if current_user.user_type not in ['admin', 'secretary']:
+        return jsonify({'error': 'Acesso negado'}), 403
+    
+    # Get students not enrolled in this course
+    enrolled_students = db.session.query(Student.id).join(Enrollment).filter(
+        Enrollment.course_id == course_id,
+        Enrollment.status.in_(['active', 'suspended'])
+    ).subquery()
+    
+    available_students = db.session.query(Student, User).join(User).filter(
+        ~Student.id.in_(enrolled_students),
+        User.is_active == True
+    ).all()
+    
+    students_data = [
+        {'id': student.id, 'name': user.full_name, 'email': user.email}
+        for student, user in available_students
+    ]
+    
+    return jsonify({'students': students_data})
+
+@admin.route('/enrollment/<int:enrollment_id>/status', methods=['POST'])
+@login_required
+def change_enrollment_status(enrollment_id):
+    if current_user.user_type not in ['admin', 'secretary']:
+        return jsonify({'error': 'Acesso negado'}), 403
+    
+    enrollment = Enrollment.query.get_or_404(enrollment_id)
+    data = request.get_json()
+    new_status = data.get('status')
+    
+    if new_status not in ['active', 'suspended', 'cancelled', 'completed']:
+        return jsonify({'error': 'Status inválido'}), 400
+    
+    enrollment.status = new_status
+    db.session.commit()
+    
+    return jsonify({'success': True, 'message': f'Status alterado para {new_status}'})
+
+@admin.route('/course/<int:course_id>/enroll', methods=['POST'])
+@login_required
+def enroll_student(course_id):
+    if current_user.user_type not in ['admin', 'secretary']:
+        flash('Acesso negado.', 'danger')
+        return redirect(url_for('main.index'))
+    
+    course = Course.query.get_or_404(course_id)
+    student_id = request.form.get('student_id')
+    enrollment_date = request.form.get('enrollment_date')
+    
+    if not student_id or not enrollment_date:
+        flash('Dados incompletos.', 'danger')
+        return redirect(url_for('admin.course_students', course_id=course_id))
+    
+    # Check if student is already enrolled
+    existing = Enrollment.query.filter_by(
+        student_id=student_id,
+        course_id=course_id,
+        status='active'
+    ).first()
+    
+    if existing:
+        flash('Aluno já está matriculado neste curso.', 'warning')
+        return redirect(url_for('admin.course_students', course_id=course_id))
+    
+    # Check course capacity
+    active_enrollments = Enrollment.query.filter_by(
+        course_id=course_id,
+        status='active'
+    ).count()
+    
+    if active_enrollments >= course.max_students:
+        flash('Curso já atingiu a capacidade máxima.', 'warning')
+        return redirect(url_for('admin.course_students', course_id=course_id))
+    
+    # Create enrollment
+    enrollment = Enrollment()
+    enrollment.student_id = student_id
+    enrollment.course_id = course_id
+    enrollment.enrollment_date = datetime.strptime(enrollment_date, '%Y-%m-%d').date()
+    enrollment.status = 'active'
+    
+    db.session.add(enrollment)
+    db.session.commit()
+    
+    flash('Aluno matriculado com sucesso!', 'success')
+    return redirect(url_for('admin.course_students', course_id=course_id))
+
+@admin.route('/material/<int:material_id>/download')
+@login_required
+def download_material(material_id):
+    if current_user.user_type not in ['admin', 'secretary', 'teacher', 'student']:
+        flash('Acesso negado.', 'danger')
+        return redirect(url_for('main.index'))
+    
+    material = Material.query.get_or_404(material_id)
+    
+    # Check if user has access to this material
+    if current_user.user_type == 'student':
+        student = Student.query.filter_by(user_id=current_user.id).first()
+        if not student:
+            flash('Perfil de estudante não encontrado.', 'danger')
+            return redirect(url_for('main.index'))
+        
+        # Check if student is enrolled in the course
+        enrollment = Enrollment.query.filter_by(
+            student_id=student.id,
+            course_id=material.course_id,
+            status='active'
+        ).first()
+        
+        if not enrollment:
+            flash('Você não tem acesso a este material.', 'danger')
+            return redirect(url_for('student.student_dashboard'))
+    
+    elif current_user.user_type == 'teacher':
+        teacher = Teacher.query.filter_by(user_id=current_user.id).first()
+        if not teacher:
+            flash('Perfil de professor não encontrado.', 'danger')
+            return redirect(url_for('main.index'))
+        
+        # Check if teacher teaches this course
+        course = Course.query.get(material.course_id)
+        if course and course.teacher_id != teacher.id:
+            flash('Você não tem acesso a este material.', 'danger')
+            return redirect(url_for('teacher.teacher_dashboard'))
+    
+    upload_folder = current_app.config.get('UPLOAD_FOLDER', 'uploads')
+    return send_from_directory(upload_folder, material.filename, as_attachment=True)
+
+@admin.route('/material/<int:material_id>/delete', methods=['POST'])
+@login_required
+def delete_material(material_id):
+    if current_user.user_type not in ['admin', 'secretary']:
+        return jsonify({'error': 'Acesso negado'}), 403
+    
+    material = Material.query.get_or_404(material_id)
+    
+    # Delete file from filesystem
+    upload_folder = current_app.config.get('UPLOAD_FOLDER', 'uploads')
+    file_path = os.path.join(upload_folder, material.filename)
+    if os.path.exists(file_path):
+        os.remove(file_path)
+    
+    # Delete from database
+    db.session.delete(material)
+    db.session.commit()
+    
+    return jsonify({'success': True, 'message': 'Material excluído com sucesso'})
+
+@admin.route('/course/<int:course_id>/upload-material', methods=['POST'])
+@login_required
+def upload_material(course_id):
+    if current_user.user_type not in ['admin', 'secretary', 'teacher']:
+        flash('Acesso negado.', 'danger')
+        return redirect(url_for('main.index'))
+    
+    course = Course.query.get_or_404(course_id)
+    
+    # Check if teacher is uploading for their own course
+    if current_user.user_type == 'teacher':
+        teacher = Teacher.query.filter_by(user_id=current_user.id).first()
+        if not teacher or course.teacher_id != teacher.id:
+            flash('Você só pode enviar materiais para seus próprios cursos.', 'danger')
+            return redirect(url_for('teacher.teacher_dashboard'))
+    
+    title = request.form.get('title')
+    description = request.form.get('description')
+    file = request.files.get('file')
+    
+    if not title or not file:
+        flash('Título e arquivo são obrigatórios.', 'danger')
+        return redirect(url_for('admin.course_materials', course_id=course_id))
+    
+    if file.filename and not allowed_file(file.filename):
+        flash('Tipo de arquivo não permitido.', 'danger')
+        return redirect(url_for('admin.course_materials', course_id=course_id))
+    
+    # Create upload directory if it doesn't exist
+    upload_folder = current_app.config.get('UPLOAD_FOLDER', 'uploads')
+    os.makedirs(upload_folder, exist_ok=True)
+    
+    # Save file
+    filename = secure_filename(file.filename or 'unnamed')
+    # Add timestamp to avoid conflicts
+    name, ext = os.path.splitext(filename)
+    filename = f"{name}_{int(datetime.now().timestamp())}{ext}"
+    file_path = os.path.join(upload_folder, filename)
+    file.save(file_path)
+    
+    # Get file info
+    file_size = os.path.getsize(file_path)
+    file_type = ext[1:].lower() if ext else None
+    
+    # Create material record
+    material = Material()
+    material.title = title
+    material.description = description
+    material.filename = filename
+    material.file_type = file_type
+    material.file_size = file_size
+    material.course_id = course_id
+    material.uploaded_by_id = current_user.id
+    material.uploaded_at = datetime.now()
+    
+    db.session.add(material)
+    db.session.commit()
+    
+    flash('Material enviado com sucesso!', 'success')
+    return redirect(url_for('admin.course_materials', course_id=course_id))
+
+@admin.route('/material/<int:material_id>/preview')
+@login_required
+def preview_material(material_id):
+    if current_user.user_type not in ['admin', 'secretary', 'teacher', 'student']:
+        flash('Acesso negado.', 'danger')
+        return redirect(url_for('main.index'))
+    
+    material = Material.query.get_or_404(material_id)
+    
+    # Same access control as download
+    if current_user.user_type == 'student':
+        student = Student.query.filter_by(user_id=current_user.id).first()
+        if not student:
+            flash('Perfil de estudante não encontrado.', 'danger')
+            return redirect(url_for('main.index'))
+        
+        enrollment = Enrollment.query.filter_by(
+            student_id=student.id,
+            course_id=material.course_id,
+            status='active'
+        ).first()
+        
+        if not enrollment:
+            flash('Você não tem acesso a este material.', 'danger')
+            return redirect(url_for('student.student_dashboard'))
+    
+    elif current_user.user_type == 'teacher':
+        teacher = Teacher.query.filter_by(user_id=current_user.id).first()
+        if not teacher:
+            flash('Perfil de professor não encontrado.', 'danger')
+            return redirect(url_for('main.index'))
+        
+        course = Course.query.get(material.course_id)
+        if course and course.teacher_id != teacher.id:
+            flash('Você não tem acesso a este material.', 'danger')
+            return redirect(url_for('teacher.teacher_dashboard'))
+    
+    upload_folder = current_app.config.get('UPLOAD_FOLDER', 'uploads')
+    
+    # For preview, serve inline instead of as attachment
+    if material.file_type in ['pdf', 'jpg', 'jpeg', 'png', 'gif']:
+        return send_from_directory(upload_folder, material.filename)
+    else:
+        # For other file types, download instead
+        return send_from_directory(upload_folder, material.filename, as_attachment=True)

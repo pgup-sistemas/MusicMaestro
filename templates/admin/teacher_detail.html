@@ -1,0 +1,203 @@
+{% extends "base.html" %}
+
+{% block title %}Detalhes do Professor - Escola Sol Maior{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mt-4 mb-4">
+            <h1><i class="fas fa-chalkboard-teacher me-2"></i>{{ user.full_name }}</h1>
+            <div>
+                <a href="{{ url_for('admin.edit_teacher', teacher_id=teacher.id) }}" class="btn btn-warning">
+                    <i class="fas fa-edit me-2"></i>Editar
+                </a>
+                <a href="{{ url_for('admin.teacher_schedule', teacher_id=teacher.id) }}" class="btn btn-info">
+                    <i class="fas fa-calendar me-2"></i>Agenda
+                </a>
+                <a href="{{ url_for('admin.teachers') }}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left me-2"></i>Voltar
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-info-circle me-2"></i>Informações Pessoais</h5>
+            </div>
+            <div class="card-body">
+                <table class="table table-borderless">
+                    <tr>
+                        <td><strong>Nome:</strong></td>
+                        <td>{{ user.full_name }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>E-mail:</strong></td>
+                        <td>{{ user.email }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Telefone:</strong></td>
+                        <td>{{ user.phone|phone if user.phone else '-' }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Especialização:</strong></td>
+                        <td>{{ teacher.specialization or '-' }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Data de Contratação:</strong></td>
+                        <td>{{ teacher.hire_date|date_br if teacher.hire_date else '-' }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Valor por Hora:</strong></td>
+                        <td>{{ teacher.hourly_rate|currency if teacher.hourly_rate else '-' }}</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-university me-2"></i>Dados Bancários</h5>
+            </div>
+            <div class="card-body">
+                <table class="table table-borderless">
+                    <tr>
+                        <td><strong>Banco:</strong></td>
+                        <td>{{ teacher.bank_name or '-' }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Agência:</strong></td>
+                        <td>{{ teacher.bank_agency or '-' }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Conta:</strong></td>
+                        <td>{{ teacher.bank_account or '-' }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Chave PIX:</strong></td>
+                        <td>{{ teacher.pix_key or '-' }}</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-book me-2"></i>Cursos Ministrados</h5>
+            </div>
+            <div class="card-body">
+                {% if courses %}
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Curso</th>
+                                    <th>Instrumento</th>
+                                    <th>Nível</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for course in courses %}
+                                <tr>
+                                    <td>{{ course.name }}</td>
+                                    <td>{{ course.instrument or '-' }}</td>
+                                    <td>{{ course.level or '-' }}</td>
+                                    <td>
+                                        <span class="badge bg-{{ 'success' if course.is_active else 'secondary' }}">
+                                            {{ 'Ativo' if course.is_active else 'Inativo' }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <p class="text-muted">Nenhum curso atribuído.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-calendar me-2"></i>Próximos Horários</h5>
+            </div>
+            <div class="card-body">
+                {% if schedules %}
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Dia</th>
+                                    <th>Horário</th>
+                                    <th>Curso</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for schedule in schedules[:5] %}
+                                <tr>
+                                    <td>
+                                        {% set days = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo'] %}
+                                        {{ days[schedule.day_of_week] }}
+                                    </td>
+                                    <td>
+                                        <small>{{ schedule.start_time.strftime('%H:%M') }} - {{ schedule.end_time.strftime('%H:%M') }}</small>
+                                    </td>
+                                    <td>{{ schedule.course.name if schedule.course else '-' }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="mt-2">
+                        <a href="{{ url_for('admin.teacher_schedule', teacher_id=teacher.id) }}" class="btn btn-outline-primary btn-sm">
+                            <i class="fas fa-calendar me-1"></i>Ver Agenda Completa
+                        </a>
+                    </div>
+                {% else %}
+                    <p class="text-muted">Nenhum horário agendado.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if teacher.bio or teacher.qualifications %}
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-user-graduate me-2"></i>Informações Profissionais</h5>
+            </div>
+            <div class="card-body">
+                {% if teacher.bio %}
+                    <div class="mb-3">
+                        <strong>Biografia:</strong>
+                        <p>{{ teacher.bio }}</p>
+                    </div>
+                {% endif %}
+                
+                {% if teacher.qualifications %}
+                    <div class="mb-3">
+                        <strong>Qualificações:</strong>
+                        <p>{{ teacher.qualifications }}</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

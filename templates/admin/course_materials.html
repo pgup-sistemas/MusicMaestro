@@ -1,0 +1,267 @@
+{% extends "base.html" %}
+
+{% block title %}Materiais do Curso - Escola Sol Maior{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mt-4 mb-4">
+            <h1><i class="fas fa-folder me-2"></i>Materiais - {{ course.name }}</h1>
+            <div>
+                <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#uploadMaterialModal">
+                    <i class="fas fa-upload me-2"></i>Enviar Material
+                </button>
+                <a href="{{ url_for('admin.view_course', course_id=course.id) }}" class="btn btn-info">
+                    <i class="fas fa-eye me-2"></i>Ver Curso
+                </a>
+                <a href="{{ url_for('admin.courses') }}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left me-2"></i>Voltar
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h3 class="text-primary">{{ materials|length }}</h3>
+                <p class="text-muted mb-0">Total de Materiais</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                {% set pdf_count = materials|selectattr('file_type', 'equalto', 'pdf')|list|length %}
+                <h3 class="text-danger">{{ pdf_count }}</h3>
+                <p class="text-muted mb-0">PDFs</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                {% set audio_count = materials|selectattr('file_type', 'in', ['mp3', 'wav', 'ogg'])|list|length %}
+                <h3 class="text-success">{{ audio_count }}</h3>
+                <p class="text-muted mb-0">Áudios</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                {% set video_count = materials|selectattr('file_type', 'in', ['mp4', 'avi', 'mov'])|list|length %}
+                <h3 class="text-warning">{{ video_count }}</h3>
+                <p class="text-muted mb-0">Vídeos</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-list me-2"></i>Lista de Materiais</h5>
+            </div>
+            <div class="card-body">
+                {% if materials %}
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>Material</th>
+                                    <th>Tipo</th>
+                                    <th>Tamanho</th>
+                                    <th>Enviado por</th>
+                                    <th>Data</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for material in materials %}
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="file-icon me-2">
+                                                {% if material.file_type == 'pdf' %}
+                                                    <i class="fas fa-file-pdf text-danger fa-lg"></i>
+                                                {% elif material.file_type in ['mp3', 'wav', 'ogg'] %}
+                                                    <i class="fas fa-file-audio text-success fa-lg"></i>
+                                                {% elif material.file_type in ['mp4', 'avi', 'mov'] %}
+                                                    <i class="fas fa-file-video text-warning fa-lg"></i>
+                                                {% elif material.file_type in ['jpg', 'jpeg', 'png', 'gif'] %}
+                                                    <i class="fas fa-file-image text-info fa-lg"></i>
+                                                {% elif material.file_type in ['doc', 'docx'] %}
+                                                    <i class="fas fa-file-word text-primary fa-lg"></i>
+                                                {% else %}
+                                                    <i class="fas fa-file text-secondary fa-lg"></i>
+                                                {% endif %}
+                                            </div>
+                                            <div>
+                                                <strong>{{ material.title }}</strong>
+                                                {% if material.description %}
+                                                    <br><small class="text-muted">{{ material.description[:50] }}{% if material.description|length > 50 %}...{% endif %}</small>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-secondary">{{ material.file_type.upper() if material.file_type else 'FILE' }}</span>
+                                    </td>
+                                    <td>
+                                        {% if material.file_size %}
+                                            {% if material.file_size < 1024 %}
+                                                {{ material.file_size }} B
+                                            {% elif material.file_size < 1048576 %}
+                                                {{ "%.1f"|format(material.file_size / 1024) }} KB
+                                            {% else %}
+                                                {{ "%.1f"|format(material.file_size / 1048576) }} MB
+                                            {% endif %}
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ material.uploaded_by.full_name if material.uploaded_by else '-' }}</td>
+                                    <td>{{ material.uploaded_at|date_br }}</td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm" role="group">
+                                            <a href="{{ url_for('admin.download_material', material_id=material.id) }}" class="btn btn-outline-primary" title="Download">
+                                                <i class="fas fa-download"></i>
+                                            </a>
+                                            <button class="btn btn-outline-info" title="Visualizar" onclick="previewMaterial({{ material.id }})">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                            <button class="btn btn-outline-warning" title="Editar" onclick="editMaterial({{ material.id }})">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                            <button class="btn btn-outline-danger" title="Excluir" onclick="deleteMaterial({{ material.id }})">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-folder-open fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">Nenhum material disponível</h5>
+                        <p class="text-muted">Este curso ainda não possui materiais. Faça o upload do primeiro material.</p>
+                        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#uploadMaterialModal">
+                            <i class="fas fa-upload me-2"></i>Enviar Primeiro Material
+                        </button>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para Upload de Material -->
+<div class="modal fade" id="uploadMaterialModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-upload me-2"></i>Enviar Material</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="uploadForm" action="{{ url_for('admin.upload_material', course_id=course.id) }}" method="POST" enctype="multipart/form-data">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="title" class="form-label">Título do Material</label>
+                        <input type="text" class="form-control" id="title" name="title" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Descrição (opcional)</label>
+                        <textarea class="form-control" id="description" name="description" rows="3"></textarea>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="file" class="form-label">Arquivo</label>
+                        <input type="file" class="form-control" id="file" name="file" required accept=".pdf,.doc,.docx,.mp3,.wav,.mp4,.avi,.jpg,.jpeg,.png">
+                        <div class="form-text">
+                            Formatos aceitos: PDF, DOC, DOCX, MP3, WAV, MP4, AVI, JPG, PNG<br>
+                            Tamanho máximo: 16MB
+                        </div>
+                    </div>
+                    
+                    <div class="progress d-none" id="uploadProgress">
+                        <div class="progress-bar" role="progressbar" style="width: 0%"></div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary" id="uploadBtn">
+                        <i class="fas fa-upload me-2"></i>Enviar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+// Upload progress
+document.getElementById('uploadForm').addEventListener('submit', function(e) {
+    const progressBar = document.querySelector('#uploadProgress .progress-bar');
+    const progressContainer = document.getElementById('uploadProgress');
+    const uploadBtn = document.getElementById('uploadBtn');
+    
+    progressContainer.classList.remove('d-none');
+    uploadBtn.disabled = true;
+    uploadBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Enviando...';
+    
+    // Simulate progress (in real implementation, use XMLHttpRequest for actual progress)
+    let progress = 0;
+    const interval = setInterval(() => {
+        progress += 10;
+        progressBar.style.width = progress + '%';
+        if (progress >= 90) {
+            clearInterval(interval);
+        }
+    }, 100);
+});
+
+// Preview material
+function previewMaterial(materialId) {
+    window.open(`/admin/material/${materialId}/preview`, '_blank');
+}
+
+// Edit material
+function editMaterial(materialId) {
+    // Implementation for editing material
+    alert('Funcionalidade de edição em desenvolvimento');
+}
+
+// Delete material
+function deleteMaterial(materialId) {
+    if (confirm('Tem certeza que deseja excluir este material?')) {
+        fetch(`/admin/material/${materialId}/delete`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token() }}'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Erro ao excluir material');
+            }
+        })
+        .catch(error => {
+            console.error('Erro:', error);
+            alert('Erro ao excluir material');
+        });
+    }
+}
+</script>
+{% endblock %}

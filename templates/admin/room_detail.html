@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+
+{% block title %}Detalhes da Sala - Escola Sol Maior{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mt-4 mb-4">
+            <h1><i class="fas fa-door-open me-2"></i>{{ room.name }}</h1>
+            <div>
+                <a href="{{ url_for('admin.edit_room', room_id=room.id) }}" class="btn btn-warning">
+                    <i class="fas fa-edit me-2"></i>Editar
+                </a>
+                <a href="{{ url_for('admin.rooms') }}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left me-2"></i>Voltar
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-info-circle me-2"></i>Informações da Sala</h5>
+            </div>
+            <div class="card-body">
+                <table class="table table-borderless">
+                    <tr>
+                        <td><strong>Nome:</strong></td>
+                        <td>{{ room.name }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Capacidade:</strong></td>
+                        <td>
+                            <i class="fas fa-users me-1"></i>{{ room.capacity }}
+                            {% if room.capacity == 1 %}pessoa{% else %}pessoas{% endif %}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><strong>Localização:</strong></td>
+                        <td>{{ room.location or '-' }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Status:</strong></td>
+                        <td>
+                            {% if room.is_available %}
+                                <span class="badge bg-success">Disponível</span>
+                            {% else %}
+                                <span class="badge bg-warning">Indisponível</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+        
+        {% if room.equipment %}
+        <div class="card mt-3">
+            <div class="card-header">
+                <h5><i class="fas fa-tools me-2"></i>Equipamentos</h5>
+            </div>
+            <div class="card-body">
+                <p>{{ room.equipment }}</p>
+            </div>
+        </div>
+        {% endif %}
+        
+        {% if room.notes %}
+        <div class="card mt-3">
+            <div class="card-header">
+                <h5><i class="fas fa-sticky-note me-2"></i>Observações</h5>
+            </div>
+            <div class="card-body">
+                <p>{{ room.notes }}</p>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-calendar me-2"></i>Agenda da Sala</h5>
+            </div>
+            <div class="card-body">
+                {% if schedules %}
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Dia</th>
+                                    <th>Horário</th>
+                                    <th>Curso</th>
+                                    <th>Professor</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for schedule, course, teacher, user in schedules %}
+                                <tr>
+                                    <td>
+                                        {% set days = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo'] %}
+                                        {{ days[schedule.day_of_week] }}
+                                    </td>
+                                    <td>
+                                        <small>{{ schedule.start_time.strftime('%H:%M') }} - {{ schedule.end_time.strftime('%H:%M') }}</small>
+                                    </td>
+                                    <td>{{ course.name }}</td>
+                                    <td>{{ user.full_name }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-calendar-times fa-2x text-muted mb-2"></i>
+                        <p class="text-muted">Nenhum horário agendado para esta sala.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

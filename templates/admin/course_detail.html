@@ -1,0 +1,240 @@
+{% extends "base.html" %}
+
+{% block title %}Detalhes do Curso - Escola Sol Maior{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mt-4 mb-4">
+            <h1><i class="fas fa-music me-2"></i>{{ course.name }}</h1>
+            <div>
+                <a href="{{ url_for('admin.edit_course', course_id=course.id) }}" class="btn btn-warning">
+                    <i class="fas fa-edit me-2"></i>Editar
+                </a>
+                <a href="{{ url_for('admin.course_students', course_id=course.id) }}" class="btn btn-info">
+                    <i class="fas fa-users me-2"></i>Alunos
+                </a>
+                <a href="{{ url_for('admin.course_materials', course_id=course.id) }}" class="btn btn-success">
+                    <i class="fas fa-folder me-2"></i>Materiais
+                </a>
+                <a href="{{ url_for('admin.courses') }}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left me-2"></i>Voltar
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-info-circle me-2"></i>Informações do Curso</h5>
+            </div>
+            <div class="card-body">
+                <table class="table table-borderless">
+                    <tr>
+                        <td><strong>Nome:</strong></td>
+                        <td>{{ course.name }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Instrumento:</strong></td>
+                        <td>{{ course.instrument or '-' }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Nível:</strong></td>
+                        <td>{{ course.level or '-' }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Duração:</strong></td>
+                        <td>{{ course.duration_months }} meses</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Mensalidade:</strong></td>
+                        <td class="h5 text-success">{{ course.monthly_price|currency }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Máx. Alunos:</strong></td>
+                        <td>{{ course.max_students }} alunos</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Professor:</strong></td>
+                        <td>
+                            {% if course.teacher %}
+                                <a href="{{ url_for('admin.view_teacher', teacher_id=course.teacher.id) }}">
+                                    {{ course.teacher.user.full_name }}
+                                </a>
+                            {% else %}
+                                <span class="text-muted">Não atribuído</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><strong>Status:</strong></td>
+                        <td>
+                            {% if course.is_active %}
+                                <span class="badge bg-success">Ativo</span>
+                            {% else %}
+                                <span class="badge bg-danger">Inativo</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+        
+        {% if course.description %}
+        <div class="card mt-3">
+            <div class="card-header">
+                <h5><i class="fas fa-align-left me-2"></i>Descrição</h5>
+            </div>
+            <div class="card-body">
+                <p>{{ course.description }}</p>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-chart-pie me-2"></i>Estatísticas</h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-4">
+                        <h3 class="text-primary">{{ enrollments|length }}</h3>
+                        <small class="text-muted">Alunos Matriculados</small>
+                    </div>
+                    <div class="col-4">
+                        <h3 class="text-success">{{ materials|length }}</h3>
+                        <small class="text-muted">Materiais</small>
+                    </div>
+                    <div class="col-4">
+                        <h3 class="text-warning">{{ schedules|length }}</h3>
+                        <small class="text-muted">Horários</small>
+                    </div>
+                </div>
+                
+                <hr>
+                
+                <div class="progress mb-2">
+                    {% set occupancy = (enrollments|length / course.max_students * 100) if course.max_students > 0 else 0 %}
+                    <div class="progress-bar" role="progressbar" style="width: {{ occupancy }}%" aria-valuenow="{{ occupancy }}" aria-valuemin="0" aria-valuemax="100"></div>
+                </div>
+                <small class="text-muted">{{ "%.1f"|format(occupancy) }}% de ocupação ({{ enrollments|length }}/{{ course.max_students }})</small>
+            </div>
+        </div>
+        
+        <div class="card mt-3">
+            <div class="card-header">
+                <h5><i class="fas fa-calendar me-2"></i>Horários</h5>
+            </div>
+            <div class="card-body">
+                {% if schedules %}
+                    {% for schedule in schedules %}
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <div>
+                                {% set days = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo'] %}
+                                <strong>{{ days[schedule.day_of_week] }}</strong><br>
+                                <small class="text-muted">{{ schedule.start_time.strftime('%H:%M') }} - {{ schedule.end_time.strftime('%H:%M') }}</small>
+                            </div>
+                            <div>
+                                {% if schedule.room %}
+                                    <span class="badge bg-info">{{ schedule.room.name }}</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <p class="text-muted">Nenhum horário definido.</p>
+                    <a href="{{ url_for('admin.add_schedule') }}" class="btn btn-outline-primary btn-sm">
+                        <i class="fas fa-plus me-1"></i>Adicionar Horário
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5><i class="fas fa-users me-2"></i>Alunos Matriculados</h5>
+                <a href="{{ url_for('admin.course_students', course_id=course.id) }}" class="btn btn-outline-primary btn-sm">
+                    <i class="fas fa-eye me-1"></i>Ver Todos
+                </a>
+            </div>
+            <div class="card-body">
+                {% if enrollments %}
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Aluno</th>
+                                    <th>Matrícula</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for enrollment, student, user in enrollments[:5] %}
+                                <tr>
+                                    <td>
+                                        <a href="{{ url_for('admin.view_student', student_id=student.id) }}">
+                                            {{ user.full_name }}
+                                        </a>
+                                    </td>
+                                    <td>{{ enrollment.enrollment_date|date_br }}</td>
+                                    <td>
+                                        <span class="badge bg-{{ 'success' if enrollment.status == 'active' else 'secondary' }}">
+                                            {{ enrollment.status.title() }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% if enrollments|length > 5 %}
+                        <p class="text-muted small">E mais {{ enrollments|length - 5 }} alunos...</p>
+                    {% endif %}
+                {% else %}
+                    <p class="text-muted">Nenhum aluno matriculado.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5><i class="fas fa-folder me-2"></i>Materiais do Curso</h5>
+                <a href="{{ url_for('admin.course_materials', course_id=course.id) }}" class="btn btn-outline-success btn-sm">
+                    <i class="fas fa-eye me-1"></i>Ver Todos
+                </a>
+            </div>
+            <div class="card-body">
+                {% if materials %}
+                    <div class="list-group">
+                        {% for material in materials[:5] %}
+                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="mb-1">{{ material.title }}</h6>
+                                <small class="text-muted">{{ material.uploaded_at|date_br }}</small>
+                            </div>
+                            <span class="badge bg-primary rounded-pill">{{ material.file_type.upper() if material.file_type else 'FILE' }}</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% if materials|length > 5 %}
+                        <p class="text-muted small mt-2">E mais {{ materials|length - 5 }} materiais...</p>
+                    {% endif %}
+                {% else %}
+                    <p class="text-muted">Nenhum material disponível.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

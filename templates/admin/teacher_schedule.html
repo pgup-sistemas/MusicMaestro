@@ -1,0 +1,149 @@
+{% extends "base.html" %}
+
+{% block title %}Agenda do Professor - Escola Sol Maior{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mt-4 mb-4">
+            <h1><i class="fas fa-calendar me-2"></i>Agenda - {{ user.full_name }}</h1>
+            <div>
+                <a href="{{ url_for('admin.add_schedule') }}" class="btn btn-success">
+                    <i class="fas fa-plus me-2"></i>Novo Horário
+                </a>
+                <a href="{{ url_for('admin.view_teacher', teacher_id=teacher.id) }}" class="btn btn-info">
+                    <i class="fas fa-user me-2"></i>Ver Perfil
+                </a>
+                <a href="{{ url_for('admin.teachers') }}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left me-2"></i>Voltar
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-clock me-2"></i>Horários Semanais</h5>
+            </div>
+            <div class="card-body">
+                {% if schedules %}
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>Dia da Semana</th>
+                                    <th>Horário</th>
+                                    <th>Curso</th>
+                                    <th>Sala</th>
+                                    <th>Status</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for schedule, course, room in schedules %}
+                                <tr>
+                                    <td>
+                                        {% set days = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo'] %}
+                                        <strong>{{ days[schedule.day_of_week] }}</strong>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-primary">
+                                            {{ schedule.start_time.strftime('%H:%M') }} - {{ schedule.end_time.strftime('%H:%M') }}
+                                        </span>
+                                    </td>
+                                    <td>{{ course.name }}</td>
+                                    <td>{{ room.name }}</td>
+                                    <td>
+                                        {% if schedule.is_active %}
+                                            <span class="badge bg-success">Ativo</span>
+                                        {% else %}
+                                            <span class="badge bg-danger">Inativo</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm" role="group">
+                                            <a href="{{ url_for('admin.edit_schedule', schedule_id=schedule.id) }}" class="btn btn-outline-primary" title="Editar">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            <a href="{{ url_for('admin.delete_schedule', schedule_id=schedule.id) }}" class="btn btn-outline-danger" title="Remover" onclick="return confirm('Tem certeza que deseja remover este horário?')">
+                                                <i class="fas fa-times"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-calendar-times fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">Nenhum horário agendado</h5>
+                        <p class="text-muted">Este professor ainda não possui horários definidos.</p>
+                        <a href="{{ url_for('admin.add_schedule') }}" class="btn btn-primary">
+                            <i class="fas fa-plus me-2"></i>Adicionar Horário
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h6><i class="fas fa-user me-2"></i>Professor</h6>
+            </div>
+            <div class="card-body">
+                <h5>{{ user.full_name }}</h5>
+                <p class="text-muted">{{ teacher.specialization or 'Sem especialização definida' }}</p>
+                
+                <hr>
+                
+                <div class="row text-center">
+                    <div class="col-6">
+                        <div class="border-end">
+                            <h6 class="text-primary">{{ schedules|length }}</h6>
+                            <small class="text-muted">Horários</small>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <h6 class="text-success">{{ teacher.hourly_rate|currency if teacher.hourly_rate else '-' }}</h6>
+                        <small class="text-muted">Valor/Hora</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card mt-3">
+            <div class="card-header">
+                <h6><i class="fas fa-chart-line me-2"></i>Resumo Semanal</h6>
+            </div>
+            <div class="card-body">
+                {% if schedules %}
+                    {% set schedule_summary = {} %}
+                    {% for schedule, course, room in schedules %}
+                        {% set day_name = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo'][schedule.day_of_week] %}
+                        {% if day_name not in schedule_summary %}
+                            {% set _ = schedule_summary.update({day_name: []}) %}
+                        {% endif %}
+                        {% set _ = schedule_summary[day_name].append(schedule) %}
+                    {% endfor %}
+                    
+                    {% for day, schedules_day in schedule_summary.items() %}
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>{{ day }}</span>
+                            <span class="badge bg-info">{{ schedules_day|length }} aula{{ 's' if schedules_day|length != 1 else '' }}</span>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <p class="text-muted small">Nenhum horário para exibir.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
