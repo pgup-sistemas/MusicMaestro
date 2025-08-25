@@ -1,0 +1,397 @@
+
+{% extends "base.html" %}
+
+{% block title %}Ajuda e Orientações - Escola Sol Maior{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header da Ajuda -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="bg-primary text-white p-4 rounded">
+                <div class="row align-items-center">
+                    <div class="col-md-8">
+                        <h1 class="display-6 mb-2">
+                            <i class="fas fa-question-circle me-3"></i>Central de Ajuda
+                        </h1>
+                        <p class="lead mb-0">
+                            Guia completo para usar o sistema da Escola Sol Maior
+                        </p>
+                    </div>
+                    <div class="col-md-4 text-end">
+                        <i class="fas fa-music display-1 opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Menu de Navegação Rápida -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">
+                        <i class="fas fa-compass me-2"></i>Navegação Rápida
+                    </h5>
+                    <div class="row">
+                        <div class="col-md-3 mb-2">
+                            <a href="#primeiros-passos" class="btn btn-outline-primary w-100">
+                                <i class="fas fa-play me-2"></i>Primeiros Passos
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-2">
+                            <a href="#alunos" class="btn btn-outline-success w-100">
+                                <i class="fas fa-graduation-cap me-2"></i>Para Alunos
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-2">
+                            <a href="#professores" class="btn btn-outline-info w-100">
+                                <i class="fas fa-chalkboard-teacher me-2"></i>Para Professores
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-2">
+                            <a href="#admin" class="btn btn-outline-warning w-100">
+                                <i class="fas fa-cog me-2"></i>Administração
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Seção: Primeiros Passos -->
+    <div class="row mb-5" id="primeiros-passos">
+        <div class="col-12">
+            <div class="card border-primary">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="mb-0">
+                        <i class="fas fa-play-circle me-2"></i>Primeiros Passos
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h5><i class="fas fa-user-plus me-2 text-primary"></i>Como Fazer Login</h5>
+                            <ol>
+                                <li>Acesse a página de login clicando em "Entrar"</li>
+                                <li>Digite seu email e senha fornecidos pela escola</li>
+                                <li>Clique em "Entrar" para acessar sua área</li>
+                                <li>Se esqueceu a senha, entre em contato com a secretaria</li>
+                            </ol>
+                            
+                            <h5 class="mt-4"><i class="fas fa-mobile-alt me-2 text-primary"></i>Acesso Mobile</h5>
+                            <p>O sistema funciona perfeitamente em celulares e tablets. Basta acessar pelo navegador!</p>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="alert alert-info">
+                                <h6><i class="fas fa-lightbulb me-2"></i>Dica Importante</h6>
+                                <p class="mb-0">
+                                    Cada tipo de usuário (Aluno, Professor, Administrador) tem acesso a áreas diferentes do sistema. 
+                                    Sua área será mostrada automaticamente após o login.
+                                </p>
+                            </div>
+                            
+                            <div class="alert alert-warning">
+                                <h6><i class="fas fa-shield-alt me-2"></i>Segurança</h6>
+                                <p class="mb-0">
+                                    Sempre faça logout ao terminar de usar o sistema, especialmente em computadores compartilhados.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Seção: Para Alunos -->
+    <div class="row mb-5" id="alunos">
+        <div class="col-12">
+            <div class="card border-success">
+                <div class="card-header bg-success text-white">
+                    <h3 class="mb-0">
+                        <i class="fas fa-graduation-cap me-2"></i>Área do Aluno
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="card h-100">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-calendar-alt fa-3x text-success mb-3"></i>
+                                    <h5>Meus Horários</h5>
+                                    <p>Visualize suas aulas agendadas, horários e salas.</p>
+                                    <a href="{{ url_for('student.schedule') }}" class="btn btn-success">Ver Horários</a>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card h-100">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-credit-card fa-3x text-warning mb-3"></i>
+                                    <h5>Pagamentos</h5>
+                                    <p>Acompanhe suas mensalidades e faça pagamentos online.</p>
+                                    <a href="{{ url_for('student.payments') }}" class="btn btn-warning">Ver Pagamentos</a>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card h-100">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-book fa-3x text-info mb-3"></i>
+                                    <h5>Materiais</h5>
+                                    <p>Acesse apostilas, exercícios e materiais do seu curso.</p>
+                                    <a href="{{ url_for('student.materials') }}" class="btn btn-info">Ver Materiais</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-4">
+                        <h5><i class="fas fa-question-circle me-2"></i>Como Fazer Pagamentos Online</h5>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <ol>
+                                    <li>Acesse "Meus Pagamentos"</li>
+                                    <li>Encontre a mensalidade que deseja pagar</li>
+                                    <li>Clique em "Pagar Online"</li>
+                                    <li>Escolha PIX ou Cartão de Crédito</li>
+                                    <li>Complete o pagamento</li>
+                                    <li>Você receberá confirmação por email</li>
+                                </ol>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="alert alert-success">
+                                    <h6><i class="fas fa-check-circle me-2"></i>Pagamento Seguro</h6>
+                                    <p class="mb-0">
+                                        Todos os pagamentos são processados com segurança e você receberá comprovantes por email.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Seção: Para Professores -->
+    <div class="row mb-5" id="professores">
+        <div class="col-12">
+            <div class="card border-info">
+                <div class="card-header bg-info text-white">
+                    <h3 class="mb-0">
+                        <i class="fas fa-chalkboard-teacher me-2"></i>Área do Professor
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="card h-100">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-clock fa-3x text-info mb-3"></i>
+                                    <h5>Minha Agenda</h5>
+                                    <p>Visualize suas aulas, horários e salas atribuídas.</p>
+                                    <a href="{{ url_for('teacher.schedule') }}" class="btn btn-info">Ver Agenda</a>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card h-100">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-users fa-3x text-success mb-3"></i>
+                                    <h5>Meus Alunos</h5>
+                                    <p>Acesse informações dos seus alunos matriculados.</p>
+                                    <a href="{{ url_for('teacher.students') }}" class="btn btn-success">Ver Alunos</a>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card h-100">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-chart-line fa-3x text-warning mb-3"></i>
+                                    <h5>Dashboard</h5>
+                                    <p>Visão geral das suas atividades e estatísticas.</p>
+                                    <a href="{{ url_for('teacher.dashboard') }}" class="btn btn-warning">Ver Dashboard</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Seção: Administração -->
+    <div class="row mb-5" id="admin">
+        <div class="col-12">
+            <div class="card border-warning">
+                <div class="card-header bg-warning text-dark">
+                    <h3 class="mb-0">
+                        <i class="fas fa-cog me-2"></i>Área Administrativa
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3 mb-3">
+                            <h6><i class="fas fa-users me-2 text-primary"></i>Gestão de Pessoas</h6>
+                            <ul class="list-unstyled">
+                                <li><a href="{{ url_for('admin.students') }}">• Gerenciar Alunos</a></li>
+                                <li><a href="{{ url_for('admin.teachers') }}">• Gerenciar Professores</a></li>
+                                <li><a href="{{ url_for('admin.quick_enroll') }}">• Matrícula Rápida</a></li>
+                            </ul>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <h6><i class="fas fa-book me-2 text-success"></i>Cursos e Ensino</h6>
+                            <ul class="list-unstyled">
+                                <li><a href="{{ url_for('admin.courses') }}">• Gerenciar Cursos</a></li>
+                                <li><a href="{{ url_for('admin.schedule') }}">• Horários e Agenda</a></li>
+                                <li><a href="{{ url_for('admin.rooms') }}">• Salas e Equipamentos</a></li>
+                            </ul>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <h6><i class="fas fa-dollar-sign me-2 text-warning"></i>Financeiro</h6>
+                            <ul class="list-unstyled">
+                                <li><a href="{{ url_for('admin.finances') }}">• Controle Financeiro</a></li>
+                                <li><a href="{{ url_for('admin.financial_summary') }}">• Relatórios</a></li>
+                                <li>• Gestão de Pagamentos</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <h6><i class="fas fa-chart-bar me-2 text-info"></i>Relatórios</h6>
+                            <ul class="list-unstyled">
+                                <li><a href="{{ url_for('admin.reports') }}">• Relatórios Gerais</a></li>
+                                <li><a href="{{ url_for('admin.experimental_classes') }}">• Aulas Experimentais</a></li>
+                                <li><a href="{{ url_for('admin.dashboard') }}">• Dashboard Geral</a></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- FAQ -->
+    <div class="row mb-5">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="mb-0">
+                        <i class="fas fa-question me-2"></i>Perguntas Frequentes
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <div class="accordion" id="faqAccordion">
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="faq1">
+                                <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapse1">
+                                    Como recuperar minha senha?
+                                </button>
+                            </h2>
+                            <div id="collapse1" class="accordion-collapse collapse show" data-bs-parent="#faqAccordion">
+                                <div class="accordion-body">
+                                    Entre em contato com a secretaria da escola pelo telefone ou email. Eles poderão redefinir sua senha e enviar as novas credenciais.
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="faq2">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse2">
+                                    Não consigo baixar os materiais do curso
+                                </button>
+                            </h2>
+                            <div id="collapse2" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                                <div class="accordion-body">
+                                    Verifique sua conexão com a internet e tente novamente. Se o problema persistir, pode ser que o arquivo esteja temporariamente indisponível. Entre em contato com seu professor.
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="faq3">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse3">
+                                    Como alterar meus dados pessoais?
+                                </button>
+                            </h2>
+                            <div id="collapse3" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                                <div class="accordion-body">
+                                    Atualmente, alterações de dados pessoais devem ser solicitadas à secretaria. Em breve disponibilizaremos a funcionalidade de autoedição de perfil.
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="faq4">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse4">
+                                    O pagamento online é seguro?
+                                </button>
+                            </h2>
+                            <div id="collapse4" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                                <div class="accordion-body">
+                                    Sim! Utilizamos criptografia SSL e gateways de pagamento certificados. Seus dados financeiros são protegidos e não armazenamos informações de cartão de crédito.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Contato -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card bg-light">
+                <div class="card-body text-center">
+                    <h4>
+                        <i class="fas fa-headset me-2"></i>Precisa de Mais Ajuda?
+                    </h4>
+                    <p class="lead">Nossa equipe está pronta para ajudar você!</p>
+                    <div class="row justify-content-center">
+                        <div class="col-md-3">
+                            <a href="tel:+5511999999999" class="btn btn-primary btn-lg">
+                                <i class="fas fa-phone me-2"></i>Ligar
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <a href="mailto:contato@escolasolmaior.com" class="btn btn-success btn-lg">
+                                <i class="fas fa-envelope me-2"></i>Email
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <a href="{{ url_for('public.contact') }}" class="btn btn-info btn-lg">
+                                <i class="fas fa-comment me-2"></i>Contato
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Smooth scrolling */
+html {
+    scroll-behavior: smooth;
+}
+
+/* Custom card hover effects */
+.card:hover {
+    transform: translateY(-2px);
+    transition: transform 0.2s;
+}
+
+/* Navigation buttons styling */
+.btn-outline-primary:hover,
+.btn-outline-success:hover,
+.btn-outline-info:hover,
+.btn-outline-warning:hover {
+    transform: scale(1.05);
+    transition: transform 0.2s;
+}
+</style>
+{% endblock %}

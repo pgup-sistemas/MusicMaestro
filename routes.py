@@ -48,7 +48,7 @@ def index():
 def login():
     if current_user.is_authenticated:
         return redirect(url_for('main.index'))
-    
+
     form = LoginForm()
     if form.validate_on_submit():
         user = User.query.filter_by(email=form.email.data).first()
@@ -61,7 +61,7 @@ def login():
             return redirect(next_page)
         AuditLogger.log_login(success=False)
         flash('E-mail ou senha inválidos.', 'danger')
-    
+
     return render_template('login.html', form=form)
 
 @auth.route('/logout')
@@ -79,7 +79,7 @@ def register():
         if existing_user:
             flash('Este e-mail já está cadastrado.', 'danger')
             return render_template('register.html', form=form)
-        
+
         user = User(
             username=form.username.data,
             email=form.email.data,
@@ -88,13 +88,13 @@ def register():
             full_name=form.full_name.data,
             phone=form.phone.data
         )
-        
+
         db.session.add(user)
         db.session.commit()
-        
+
         flash('Usuário criado com sucesso!', 'success')
         return redirect(url_for('auth.login'))
-    
+
     return render_template('register.html', form=form)
 
 # Admin routes
@@ -104,13 +104,13 @@ def dashboard():
     if current_user.user_type not in ['admin', 'secretary']:
         flash('Acesso negado.', 'danger')
         return redirect(url_for('main.index'))
-    
+
     # Dashboard statistics
     total_students = Student.query.count()
     total_teachers = Teacher.query.count()
     total_courses = Course.query.filter_by(is_active=True).count()
     pending_payments = Payment.query.filter_by(status='pending').count()
-    
+
     return render_template('admin/dashboard.html', 
                          total_students=total_students,
                          total_teachers=total_teachers,
@@ -123,7 +123,7 @@ def students():
     if current_user.user_type not in ['admin', 'secretary']:
         flash('Acesso negado.', 'danger')
         return redirect(url_for('main.index'))
-    
+
     students = db.session.query(Student, User).join(User, Student.user_id == User.id).all()
     return render_template('admin/students.html', students=students)
 
@@ -133,7 +133,7 @@ def add_student():
     if current_user.user_type not in ['admin', 'secretary']:
         flash('Acesso negado.', 'danger')
         return redirect(url_for('main.index'))
-    
+
     form = StudentForm()
     if form.validate_on_submit():
         # Check if user already exists
@@ -141,7 +141,7 @@ def add_student():
         if existing_user:
             flash('Este e-mail já está cadastrado.', 'danger')
             return render_template('admin/student_form.html', form=form, title='Adicionar Aluno')
-        
+
         # Create user
         user = User(
             username=form.username.data,
@@ -153,7 +153,7 @@ def add_student():
         )
         db.session.add(user)
         db.session.flush()
-        
+
         # Create student profile
         student = Student(
             user_id=user.id,
@@ -169,10 +169,10 @@ def add_student():
         )
         db.session.add(student)
         db.session.commit()
-        
+
         flash('Aluno adicionado com sucesso!', 'success')
         return redirect(url_for('admin.students'))
-    
+
     return render_template('admin/student_form.html', form=form, title='Adicionar Aluno')
 
 @admin.route('/student/edit/<int:student_id>', methods=['GET', 'POST'])
@@ -181,17 +181,17 @@ def edit_student(student_id):
     if current_user.user_type not in ['admin', 'secretary']:
         flash('Acesso negado.', 'danger')
         return redirect(url_for('main.index'))
-    
+
     student = Student.query.get_or_404(student_id)
     user = User.query.get_or_404(student.user_id)
-    
+
     form = StudentForm(obj=student)
     # Populate form with user data
     form.username.data = user.username
     form.email.data = user.email
     form.full_name.data = user.full_name
     form.phone.data = user.phone
-    
+
     if form.validate_on_submit():
         # Update user
         user.username = form.username.data
@@ -200,7 +200,7 @@ def edit_student(student_id):
         user.phone = form.phone.data
         if form.password.data:
             user.password_hash = generate_password_hash(form.password.data)
-        
+
         # Update student profile
         student.birth_date = form.birth_date.data
         student.address = form.address.data
@@ -211,11 +211,11 @@ def edit_student(student_id):
         student.guardian_email = form.guardian_email.data
         student.medical_info = form.medical_info.data
         student.notes = form.notes.data
-        
+
         db.session.commit()
         flash('Aluno atualizado com sucesso!', 'success')
         return redirect(url_for('admin.students'))
-    
+
     return render_template('admin/student_form.html', form=form, title='Editar Aluno')
 
 @admin.route('/student/view/<int:student_id>')
@@ -224,12 +224,12 @@ def view_student(student_id):
     if current_user.user_type not in ['admin', 'secretary']:
         flash('Acesso negado.', 'danger')
         return redirect(url_for('main.index'))
-    
+
     student = Student.query.get_or_404(student_id)
     user = User.query.get_or_404(student.user_id)
     enrollments = Enrollment.query.filter_by(student_id=student.id).all()
     payments = Payment.query.filter_by(student_id=student.id).order_by(Payment.due_date.desc()).all()
-    
+
     return render_template('admin/student_detail.html', student=student, user=user, 
                          enrollments=enrollments, payments=payments)
 
@@ -239,13 +239,13 @@ def toggle_student(student_id):
     if current_user.user_type not in ['admin', 'secretary']:
         flash('Acesso negado.', 'danger')
         return redirect(url_for('main.index'))
-    
+
     student = Student.query.get_or_404(student_id)
     user = User.query.get_or_404(student.user_id)
-    
+
     user.is_active = not user.is_active
     db.session.commit()
-    
+
     status = 'ativado' if user.is_active else 'desativado'
     flash(f'Aluno {status} com sucesso!', 'success')
     return redirect(url_for('admin.students'))
@@ -256,7 +256,7 @@ def teachers():
     if current_user.user_type not in ['admin', 'secretary']:
         flash('Acesso negado.', 'danger')
         return redirect(url_for('main.index'))
-    
+
     teachers = db.session.query(Teacher, User).join(User, Teacher.user_id == User.id).all()
     return render_template('admin/teachers.html', teachers=teachers)
 
@@ -266,7 +266,7 @@ def add_teacher():
     if current_user.user_type not in ['admin', 'secretary']:
         flash('Acesso negado.', 'danger')
         return redirect(url_for('main.index'))
-    
+
     form = TeacherForm()
     if form.validate_on_submit():
         # Check if user already exists
@@ -274,7 +274,7 @@ def add_teacher():
         if existing_user:
             flash('Este e-mail já está cadastrado.', 'danger')
             return render_template('admin/teacher_form.html', form=form, title='Adicionar Professor')
-        
+
         # Create user
         user = User(
             username=form.username.data,
@@ -286,7 +286,7 @@ def add_teacher():
         )
         db.session.add(user)
         db.session.flush()
-        
+
         # Create teacher profile
         teacher = Teacher(
             user_id=user.id,
@@ -301,10 +301,10 @@ def add_teacher():
         )
         db.session.add(teacher)
         db.session.commit()
-        
+
         flash('Professor adicionado com sucesso!', 'success')
         return redirect(url_for('admin.teachers'))
-    
+
     return render_template('admin/teacher_form.html', form=form, title='Adicionar Professor')
 
 @admin.route('/teacher/edit/<int:teacher_id>', methods=['GET', 'POST'])
@@ -313,17 +313,17 @@ def edit_teacher(teacher_id):
     if current_user.user_type not in ['admin', 'secretary']:
         flash('Acesso negado.', 'danger')
         return redirect(url_for('main.index'))
-    
+
     teacher = Teacher.query.get_or_404(teacher_id)
     user = User.query.get_or_404(teacher.user_id)
-    
+
     form = TeacherForm(obj=teacher)
     # Populate form with user data
     form.username.data = user.username
     form.email.data = user.email
     form.full_name.data = user.full_name
     form.phone.data = user.phone
-    
+
     if form.validate_on_submit():
         # Update user
         user.username = form.username.data
@@ -332,7 +332,7 @@ def edit_teacher(teacher_id):
         user.phone = form.phone.data
         if form.password.data:
             user.password_hash = generate_password_hash(form.password.data)
-        
+
         # Update teacher profile
         teacher.specialization = form.specialization.data
         teacher.hourly_rate = form.hourly_rate.data
@@ -342,11 +342,11 @@ def edit_teacher(teacher_id):
         teacher.pix_key = form.pix_key.data
         teacher.bio = form.bio.data
         teacher.qualifications = form.qualifications.data
-        
+
         db.session.commit()
         flash('Professor atualizado com sucesso!', 'success')
         return redirect(url_for('admin.teachers'))
-    
+
     return render_template('admin/teacher_form.html', form=form, title='Editar Professor')
 
 @admin.route('/teacher/view/<int:teacher_id>')
@@ -355,12 +355,12 @@ def view_teacher(teacher_id):
     if current_user.user_type not in ['admin', 'secretary']:
         flash('Acesso negado.', 'danger')
         return redirect(url_for('main.index'))
-    
+
     teacher = Teacher.query.get_or_404(teacher_id)
     user = User.query.get_or_404(teacher.user_id)
     courses = Course.query.filter_by(teacher_id=teacher.id).all()
     schedules = Schedule.query.filter_by(teacher_id=teacher.id).all()
-    
+
     return render_template('admin/teacher_detail.html', teacher=teacher, user=user,
                          courses=courses, schedules=schedules)
 
@@ -371,7 +371,7 @@ def rooms():
     if current_user.user_type not in ['admin', 'secretary']:
         flash('Acesso negado.', 'danger')
         return redirect(url_for('main.index'))
-    
+
     rooms = Room.query.all()
     return render_template('admin/rooms.html', rooms=rooms)
 
@@ -381,7 +381,7 @@ def add_room():
     if current_user.user_type not in ['admin', 'secretary']:
         flash('Acesso negado.', 'danger')
         return redirect(url_for('main.index'))
-    
+
     form = RoomForm()
     if form.validate_on_submit():
         room = Room(
@@ -394,10 +394,10 @@ def add_room():
         )
         db.session.add(room)
         db.session.commit()
-        
+
         flash('Sala adicionada com sucesso!', 'success')
         return redirect(url_for('admin.rooms'))
-    
+
     return render_template('admin/room_form.html', form=form, title='Adicionar Sala')
 
 @admin.route('/room/edit/<int:room_id>', methods=['GET', 'POST'])
@@ -406,10 +406,10 @@ def edit_room(room_id):
     if current_user.user_type not in ['admin', 'secretary']:
         flash('Acesso negado.', 'danger')
         return redirect(url_for('main.index'))
-    
+
     room = Room.query.get_or_404(room_id)
     form = RoomForm(obj=room)
-    
+
     if form.validate_on_submit():
         room.name = form.name.data
         room.capacity = form.capacity.data
@@ -417,11 +417,11 @@ def edit_room(room_id):
         room.location = form.location.data
         room.is_available = form.is_available.data
         room.notes = form.notes.data
-        
+
         db.session.commit()
         flash('Sala atualizada com sucesso!', 'success')
         return redirect(url_for('admin.rooms'))
-    
+
     return render_template('admin/room_form.html', form=form, title='Editar Sala')
 
 @admin.route('/room/view/<int:room_id>')
@@ -430,10 +430,10 @@ def view_room(room_id):
     if current_user.user_type not in ['admin', 'secretary']:
         flash('Acesso negado.', 'danger')
         return redirect(url_for('main.index'))
-    
+
     room = Room.query.get_or_404(room_id)
     schedules = db.session.query(Schedule, Course, Teacher, User).join(Course, Schedule.course_id == Course.id).join(Teacher, Schedule.teacher_id == Teacher.id).join(User, Teacher.user_id == User.id).filter(Schedule.room_id == room.id).all()
-    
+
     return render_template('admin/room_detail.html', room=room, schedules=schedules)
 
 @admin.route('/courses')
@@ -442,7 +442,7 @@ def courses():
     if current_user.user_type not in ['admin', 'secretary']:
         flash('Acesso negado.', 'danger')
         return redirect(url_for('main.index'))
-    
+
     courses = db.session.query(Course, Teacher, User).outerjoin(Teacher, Course.teacher_id == Teacher.id).outerjoin(User, Teacher.user_id == User.id).all()
     return render_template('admin/courses.html', courses=courses)
 
@@ -452,12 +452,12 @@ def add_course():
     if current_user.user_type not in ['admin', 'secretary']:
         flash('Acesso negado.', 'danger')
         return redirect(url_for('main.index'))
-    
+
     form = CourseForm()
     # Populate teacher choices
     teachers = db.session.query(Teacher, User).join(User, Teacher.user_id == User.id).all()
     form.teacher_id.choices = [('0', 'Selecione um professor')] + [(str(t.Teacher.id), t.User.full_name) for t in teachers]
-    
+
     if form.validate_on_submit():
         course = Course(
             name=form.name.data,
@@ -472,10 +472,10 @@ def add_course():
         )
         db.session.add(course)
         db.session.commit()
-        
+
         flash('Curso adicionado com sucesso!', 'success')
         return redirect(url_for('admin.courses'))
-    
+
     return render_template('admin/course_form.html', form=form, title='Adicionar Curso')
 
 @admin.route('/course/edit/<int:course_id>', methods=['GET', 'POST'])
@@ -484,17 +484,17 @@ def edit_course(course_id):
     if current_user.user_type not in ['admin', 'secretary']:
         flash('Acesso negado.', 'danger')
         return redirect(url_for('main.index'))
-    
+
     course = Course.query.get_or_404(course_id)
     form = CourseForm(obj=course)
-    
+
     # Populate teacher choices
     teachers = db.session.query(Teacher, User).join(User, Teacher.user_id == User.id).all()
     form.teacher_id.choices = [('0', 'Selecione um professor')] + [(str(t.Teacher.id), t.User.full_name) for t in teachers]
-    
+
     if course.teacher_id:
         form.teacher_id.data = str(course.teacher_id)
-    
+
     if form.validate_on_submit():
         course.name = form.name.data
         course.description = form.description.data
@@ -505,11 +505,11 @@ def edit_course(course_id):
         course.max_students = form.max_students.data
         course.teacher_id = int(form.teacher_id.data) if form.teacher_id.data != '0' else None
         course.is_active = form.is_active.data
-        
+
         db.session.commit()
         flash('Curso atualizado com sucesso!', 'success')
         return redirect(url_for('admin.courses'))
-    
+
     return render_template('admin/course_form.html', form=form, title='Editar Curso')
 
 
@@ -519,7 +519,7 @@ def schedule():
     if current_user.user_type not in ['admin', 'secretary']:
         flash('Acesso negado.', 'danger')
         return redirect(url_for('main.index'))
-    
+
     schedules = db.session.query(Schedule, Course, Teacher, User, Room).join(Course, Schedule.course_id == Course.id).join(Teacher, Schedule.teacher_id == Teacher.id).join(User, Teacher.user_id == User.id).join(Room, Schedule.room_id == Room.id).all()
     return render_template('admin/schedule.html', schedules=schedules)
 
@@ -529,18 +529,18 @@ def add_schedule():
     if current_user.user_type not in ['admin', 'secretary']:
         flash('Acesso negado.', 'danger')
         return redirect(url_for('main.index'))
-    
+
     form = ScheduleForm()
-    
+
     # Populate choices
     courses = Course.query.filter_by(is_active=True).all()
     teachers = db.session.query(Teacher, User).join(User, Teacher.user_id == User.id).all()
     rooms = Room.query.filter_by(is_available=True).all()
-    
+
     form.course_id.choices = [(0, 'Selecione um curso')] + [(c.id, c.name) for c in courses]
     form.teacher_id.choices = [(0, 'Selecione um professor')] + [(t.Teacher.id, t.User.full_name) for t in teachers]
     form.room_id.choices = [(0, 'Selecione uma sala')] + [(r.id, r.name) for r in rooms]
-    
+
     if form.validate_on_submit():
         schedule = Schedule()
         schedule.course_id = form.course_id.data
@@ -552,10 +552,10 @@ def add_schedule():
         schedule.is_active = True
         db.session.add(schedule)
         db.session.commit()
-        
+
         flash('Horário adicionado com sucesso!', 'success')
         return redirect(url_for('admin.schedule'))
-    
+
     return render_template('admin/schedule_form.html', form=form, title='Adicionar Horário')
 
 @admin.route('/schedule/edit/<int:schedule_id>', methods=['GET', 'POST'])
@@ -564,19 +564,19 @@ def edit_schedule(schedule_id):
     if current_user.user_type not in ['admin', 'secretary']:
         flash('Acesso negado.', 'danger')
         return redirect(url_for('main.index'))
-    
+
     schedule = Schedule.query.get_or_404(schedule_id)
     form = ScheduleForm(obj=schedule)
-    
+
     # Populate choices
     courses = Course.query.filter_by(is_active=True).all()
     teachers = db.session.query(Teacher, User).join(User, Teacher.user_id == User.id).all()
     rooms = Room.query.filter_by(is_available=True).all()
-    
+
     form.course_id.choices = [(0, 'Selecione um curso')] + [(c.id, c.name) for c in courses]
     form.teacher_id.choices = [(0, 'Selecione um professor')] + [(t.Teacher.id, t.User.full_name) for t in teachers]
     form.room_id.choices = [(0, 'Selecione uma sala')] + [(r.id, r.name) for r in rooms]
-    
+
     if form.validate_on_submit():
         schedule.course_id = form.course_id.data
         schedule.teacher_id = form.teacher_id.data
@@ -584,11 +584,11 @@ def edit_schedule(schedule_id):
         schedule.day_of_week = form.day_of_week.data
         schedule.start_time = form.start_time.data
         schedule.end_time = form.end_time.data
-        
+
         db.session.commit()
         flash('Horário atualizado com sucesso!', 'success')
         return redirect(url_for('admin.schedule'))
-    
+
     return render_template('admin/schedule_form.html', form=form, title='Editar Horário')
 
 @admin.route('/schedule/delete/<int:schedule_id>')
@@ -597,11 +597,11 @@ def delete_schedule(schedule_id):
     if current_user.user_type not in ['admin', 'secretary']:
         flash('Acesso negado.', 'danger')
         return redirect(url_for('main.index'))
-    
+
     schedule = Schedule.query.get_or_404(schedule_id)
     schedule.is_active = False
     db.session.commit()
-    
+
     flash('Horário removido com sucesso!', 'success')
     return redirect(url_for('admin.schedule'))
 
@@ -611,7 +611,7 @@ def finances():
     if current_user.user_type not in ['admin', 'secretary']:
         flash('Acesso negado.', 'danger')
         return redirect(url_for('main.index'))
-    
+
     payments = db.session.query(Payment, Student, User).join(Student, Payment.student_id == Student.id).join(User, Student.user_id == User.id).all()
     return render_template('admin/finances.html', payments=payments)
 
@@ -621,13 +621,13 @@ def add_payment():
     if current_user.user_type not in ['admin', 'secretary']:
         flash('Acesso negado.', 'danger')
         return redirect(url_for('main.index'))
-    
+
     form = PaymentForm()
-    
+
     # Populate student choices
     students = db.session.query(Student, User).join(User, Student.user_id == User.id).all()
     form.student_id.choices = [(0, 'Selecione um aluno')] + [(s.Student.id, s.User.full_name) for s in students]
-    
+
     if form.validate_on_submit():
         payment = Payment()
         payment.student_id = form.student_id.data
@@ -640,10 +640,10 @@ def add_payment():
         payment.notes = form.notes.data
         db.session.add(payment)
         db.session.commit()
-        
+
         flash('Pagamento registrado com sucesso!', 'success')
         return redirect(url_for('admin.finances'))
-    
+
     return render_template('admin/payment_form.html', form=form, title='Registrar Pagamento')
 
 @admin.route('/payment/edit/<int:payment_id>', methods=['GET', 'POST'])
@@ -652,14 +652,14 @@ def edit_payment(payment_id):
     if current_user.user_type not in ['admin', 'secretary']:
         flash('Acesso negado.', 'danger')
         return redirect(url_for('main.index'))
-    
+
     payment = Payment.query.get_or_404(payment_id)
     form = PaymentForm(obj=payment)
-    
+
     # Populate student choices
     students = db.session.query(Student, User).join(User, Student.user_id == User.id).all()
     form.student_id.choices = [(0, 'Selecione um aluno')] + [(s.Student.id, s.User.full_name) for s in students]
-    
+
     if form.validate_on_submit():
         payment.student_id = form.student_id.data
         payment.amount = form.amount.data
@@ -669,11 +669,11 @@ def edit_payment(payment_id):
         payment.payment_method = form.payment_method.data
         payment.reference_month = form.reference_month.data
         payment.notes = form.notes.data
-        
+
         db.session.commit()
         flash('Pagamento atualizado com sucesso!', 'success')
         return redirect(url_for('admin.finances'))
-    
+
     return render_template('admin/payment_form.html', form=form, title='Editar Pagamento')
 
 @admin.route('/payment/mark-paid/<int:payment_id>')
@@ -682,12 +682,12 @@ def mark_payment_paid(payment_id):
     if current_user.user_type not in ['admin', 'secretary']:
         flash('Acesso negado.', 'danger')
         return redirect(url_for('main.index'))
-    
+
     payment = Payment.query.get_or_404(payment_id)
     payment.status = 'paid'
     payment.payment_date = datetime.now().date()
     db.session.commit()
-    
+
     flash('Pagamento marcado como pago!', 'success')
     return redirect(url_for('admin.finances'))
 
@@ -697,11 +697,11 @@ def view_payment(payment_id):
     if current_user.user_type not in ['admin', 'secretary']:
         flash('Acesso negado.', 'danger')
         return redirect(url_for('main.index'))
-    
+
     payment = Payment.query.get_or_404(payment_id)
     student = Student.query.get_or_404(payment.student_id)
     user = User.query.get_or_404(student.user_id)
-    
+
     return render_template('admin/payment_detail.html', payment=payment, student=student, user=user)
 
 # Student routes
@@ -711,15 +711,15 @@ def student_dashboard():
     if current_user.user_type != 'student':
         flash('Acesso negado.', 'danger')
         return redirect(url_for('main.index'))
-    
+
     student = Student.query.filter_by(user_id=current_user.id).first()
     if not student:
         flash('Perfil de aluno não encontrado.', 'danger')
         return redirect(url_for('main.index'))
-    
+
     enrollments = Enrollment.query.filter_by(student_id=student.id).all()
     recent_payments = Payment.query.filter_by(student_id=student.id).order_by(Payment.created_at.desc()).limit(5).all()
-    
+
     return render_template('student/dashboard.html', 
                          student=student,
                          enrollments=enrollments,
@@ -731,19 +731,19 @@ def materials():
     if current_user.user_type != 'student':
         flash('Acesso negado.', 'danger')
         return redirect(url_for('main.index'))
-    
+
     student = Student.query.filter_by(user_id=current_user.id).first()
     if not student:
         flash('Perfil de aluno não encontrado.', 'danger')
         return redirect(url_for('main.index'))
-    
+
     # Get courses the student is enrolled in
     enrolled_courses = db.session.query(Course).join(Enrollment).filter(Enrollment.student_id == student.id).all()
     course_ids = [course.id for course in enrolled_courses]
-    
+
     # Get materials for these courses
     materials = Material.query.filter(Material.course_id.in_(course_ids)).all()
-    
+
     return render_template('student/materials.html', materials=materials, courses=enrolled_courses)
 
 # Teacher routes
@@ -753,15 +753,15 @@ def teacher_dashboard():
     if current_user.user_type != 'teacher':
         flash('Acesso negado.', 'danger')
         return redirect(url_for('main.index'))
-    
+
     teacher = Teacher.query.filter_by(user_id=current_user.id).first()
     if not teacher:
         flash('Perfil de professor não encontrado.', 'danger')
         return redirect(url_for('main.index'))
-    
+
     courses = Course.query.filter_by(teacher_id=teacher.id).all()
     schedules = Schedule.query.filter_by(teacher_id=teacher.id).all()
-    
+
     return render_template('teacher/dashboard.html', 
                          teacher=teacher,
                          courses=courses,
@@ -784,7 +784,7 @@ def contact():
                 Nome: {form.name.data}
                 E-mail: {form.email.data}
                 Telefone: {form.phone.data}
-                
+
                 Mensagem:
                 {form.message.data}
                 ''',
@@ -794,53 +794,19 @@ def contact():
         except Exception as e:
             current_app.logger.error(f'Error sending contact email: {e}')
             flash('Erro ao enviar mensagem. Tente novamente.', 'danger')
-        
+
         return redirect(url_for('public.contact'))
-    
+
     return render_template('public/contact.html', form=form)
 
-@public.route('/experimental-class', methods=['GET', 'POST'])
+@public.route('/experimental-class')
 def experimental_class():
     form = ExperimentalClassForm()
-    if form.validate_on_submit():
-        experimental_class = ExperimentalClass(
-            name=form.name.data,
-            email=form.email.data,
-            phone=form.phone.data,
-            instrument=form.instrument.data,
-            experience_level=form.experience_level.data,
-            preferred_date=form.preferred_date.data,
-            preferred_time=form.preferred_time.data,
-            notes=form.notes.data
-        )
-        db.session.add(experimental_class)
-        db.session.commit()
-        
-        # Send notification email
-        try:
-            send_email(
-                subject='Nova solicitação de aula experimental',
-                body=f'''
-                Nome: {form.name.data}
-                E-mail: {form.email.data}
-                Telefone: {form.phone.data}
-                Instrumento: {form.instrument.data}
-                Experiência: {form.experience_level.data}
-                Data preferencial: {form.preferred_date.data}
-                Horário preferencial: {form.preferred_time.data}
-                
-                Observações:
-                {form.notes.data}
-                ''',
-                recipients=['admin@solmaior.com']
-            )
-        except Exception as e:
-            current_app.logger.error(f'Error sending experimental class email: {e}')
-        
-        flash('Solicitação de aula experimental enviada com sucesso! Entraremos em contato em breve.', 'success')
-        return redirect(url_for('public.experimental_class'))
-    
     return render_template('public/experimental_class.html', form=form)
+
+@public.route('/help')
+def help():
+    return render_template('public/help.html')
 
 # File upload route
 @main.route('/uploads/<filename>')
@@ -854,30 +820,30 @@ def uploaded_file(filename):
 def create_pix_payment(payment_id):
     if current_user.user_type not in ['admin', 'secretary']:
         return jsonify({'error': 'Acesso negado'}), 403
-    
+
     payment = Payment.query.get_or_404(payment_id)
     student = Student.query.get(payment.student_id)
     user = User.query.get(student.user_id)
-    
+
     from payment_gateway import PaymentGateway
     gateway = PaymentGateway()
-    
+
     payer_info = {
         'name': user.full_name,
         'email': user.email,
         'document': ''  # CPF se disponível
     }
-    
+
     result = gateway.create_pix_payment(
         payment_id=payment.id,
         amount=payment.amount,
         description=f"Mensalidade {payment.reference_month.strftime('%m/%Y')}",
         payer_info=payer_info
     )
-    
+
     if result['success']:
         from models import PaymentTransaction
-        
+
         # Criar registro da transação
         transaction = PaymentTransaction()
         transaction.payment_id = payment.id
@@ -887,10 +853,10 @@ def create_pix_payment(payment_id):
         transaction.pix_code = result['pix_code']
         transaction.pix_qr_code = result['pix_qr_code']
         transaction.expires_at = datetime.strptime(result['expires_at'], '%Y-%m-%dT%H:%M:%S')
-        
+
         db.session.add(transaction)
         db.session.commit()
-        
+
         return jsonify({
             'success': True,
             'pix_code': result['pix_code'],
@@ -906,21 +872,21 @@ def pay_online(payment_id):
     if current_user.user_type != 'student':
         flash('Acesso negado.', 'danger')
         return redirect(url_for('main.index'))
-    
+
     student = Student.query.filter_by(user_id=current_user.id).first()
     if not student:
         flash('Perfil de aluno não encontrado.', 'danger')
         return redirect(url_for('main.index'))
-    
+
     payment = Payment.query.filter_by(id=payment_id, student_id=student.id).first()
     if not payment:
         flash('Pagamento não encontrado.', 'danger')
         return redirect(url_for('student.student_dashboard'))
-    
+
     if payment.status == 'paid':
         flash('Pagamento já foi realizado.', 'info')
         return redirect(url_for('student.student_dashboard'))
-    
+
     return render_template('student/payment_online.html', payment=payment)
 
 @main.route('/payment-webhook', methods=['POST'])
@@ -930,24 +896,24 @@ def payment_webhook():
     """
     try:
         data = request.get_json()
-        
+
         transaction_id = data.get('transaction_id')
         status = data.get('status')
         paid_amount = data.get('amount')
-        
+
         from payment_gateway import PaymentProcessor
-        
+
         success = PaymentProcessor.process_payment_confirmation(
             transaction_id=transaction_id,
             status=status,
             paid_amount=paid_amount
         )
-        
+
         if success:
             return jsonify({'status': 'ok'}), 200
         else:
             return jsonify({'status': 'error'}), 400
-            
+
     except Exception as e:
         current_app.logger.error(f'Webhook error: {e}')
         return jsonify({'status': 'error'}), 500
@@ -957,19 +923,19 @@ def payment_webhook():
 def send_payment_reminders():
     if current_user.user_type not in ['admin', 'secretary']:
         return jsonify({'error': 'Acesso negado'}), 403
-    
+
     from notification_service import NotificationService
-    
+
     try:
         results = NotificationService.check_and_send_payment_reminders()
-        
+
         return jsonify({
             'success': True,
             'warning_sent': results['warning_sent'],
             'overdue_sent': results['overdue_sent'],
             'message': f"Enviados {results['warning_sent']} avisos e {results['overdue_sent']} cobranças"
         })
-        
+
     except Exception as e:
         current_app.logger.error(f'Error sending reminders: {e}')
         return jsonify({'error': 'Erro ao enviar lembretes'}), 500
@@ -981,22 +947,22 @@ def view_course(course_id):
     if current_user.user_type not in ['admin', 'secretary', 'teacher']:
         flash('Acesso negado.', 'danger')
         return redirect(url_for('main.index'))
-    
+
     course = Course.query.get_or_404(course_id)
-    
+
     # Get enrollments with student and user data
     enrollments = db.session.query(Enrollment, Student, User).join(
         Student, Enrollment.student_id == Student.id
     ).join(
         User, Student.user_id == User.id
     ).filter(Enrollment.course_id == course_id).all()
-    
+
     # Get course materials
     materials = Material.query.filter_by(course_id=course_id).all()
-    
+
     # Get course schedules
     schedules = Schedule.query.filter_by(course_id=course_id).all()
-    
+
     return render_template('admin/course_detail.html', 
                          course=course, 
                          enrollments=enrollments,
@@ -1009,18 +975,18 @@ def course_students(course_id):
     if current_user.user_type not in ['admin', 'secretary']:
         flash('Acesso negado.', 'danger')
         return redirect(url_for('main.index'))
-    
+
     course = Course.query.get_or_404(course_id)
-    
+
     # Get enrollments with student and user data
     enrollments = db.session.query(Enrollment, Student, User).join(
         Student, Enrollment.student_id == Student.id
     ).join(
         User, Student.user_id == User.id
     ).filter(Enrollment.course_id == course_id).all()
-    
+
     today = date.today().strftime('%Y-%m-%d')
-    
+
     return render_template('admin/course_students.html', 
                          course=course, 
                          enrollments=enrollments,
@@ -1032,21 +998,21 @@ def course_materials(course_id):
     if current_user.user_type not in ['admin', 'secretary', 'teacher']:
         flash('Acesso negado.', 'danger')
         return redirect(url_for('main.index'))
-    
+
     course = Course.query.get_or_404(course_id)
-    
+
     # Check if teacher is accessing their own course
     if current_user.user_type == 'teacher':
         teacher = Teacher.query.filter_by(user_id=current_user.id).first()
         if not teacher or course.teacher_id != teacher.id:
             flash('Você só pode acessar materiais dos seus próprios cursos.', 'danger')
             return redirect(url_for('teacher.teacher_dashboard'))
-    
+
     # Get course materials with uploader info
     materials = db.session.query(Material, User).outerjoin(
         User, Material.uploaded_by_id == User.id
     ).filter(Material.course_id == course_id).order_by(Material.uploaded_at.desc()).all()
-    
+
     return render_template('admin/course_materials.html', 
                          course=course, 
                          materials=[m.Material for m, u in materials])
@@ -1057,10 +1023,10 @@ def teacher_schedule(teacher_id):
     if current_user.user_type not in ['admin', 'secretary']:
         flash('Acesso negado.', 'danger')
         return redirect(url_for('main.index'))
-    
+
     teacher = Teacher.query.get_or_404(teacher_id)
     user = User.query.get(teacher.user_id)
-    
+
     # Get teacher's schedules with course and room info
     schedules = db.session.query(Schedule, Course, Room).join(
         Course, Schedule.course_id == Course.id
@@ -1069,7 +1035,7 @@ def teacher_schedule(teacher_id):
     ).filter(Schedule.teacher_id == teacher_id).order_by(
         Schedule.day_of_week, Schedule.start_time
     ).all()
-    
+
     return render_template('admin/teacher_schedule.html', 
                          teacher=teacher, 
                          user=user,
@@ -1081,23 +1047,23 @@ def teacher_schedule(teacher_id):
 def api_available_students(course_id):
     if current_user.user_type not in ['admin', 'secretary']:
         return jsonify({'error': 'Acesso negado'}), 403
-    
+
     # Get students not enrolled in this course
     enrolled_students = db.session.query(Student.id).join(Enrollment).filter(
         Enrollment.course_id == course_id,
         Enrollment.status.in_(['active', 'suspended'])
     ).subquery()
-    
+
     available_students = db.session.query(Student, User).join(User).filter(
         ~Student.id.in_(enrolled_students),
         User.is_active == True
     ).all()
-    
+
     students_data = [
         {'id': student.id, 'name': user.full_name, 'email': user.email}
         for student, user in available_students
     ]
-    
+
     return jsonify({'students': students_data})
 
 @admin.route('/enrollment/<int:enrollment_id>/status', methods=['POST'])
@@ -1105,17 +1071,17 @@ def api_available_students(course_id):
 def change_enrollment_status(enrollment_id):
     if current_user.user_type not in ['admin', 'secretary']:
         return jsonify({'error': 'Acesso negado'}), 403
-    
+
     enrollment = Enrollment.query.get_or_404(enrollment_id)
     data = request.get_json()
     new_status = data.get('status')
-    
+
     if new_status not in ['active', 'suspended', 'cancelled', 'completed']:
         return jsonify({'error': 'Status inválido'}), 400
-    
+
     enrollment.status = new_status
     db.session.commit()
-    
+
     return jsonify({'success': True, 'message': f'Status alterado para {new_status}'})
 
 @admin.route('/course/<int:course_id>/enroll', methods=['POST'])
@@ -1124,43 +1090,43 @@ def enroll_student(course_id):
     if current_user.user_type not in ['admin', 'secretary']:
         flash('Acesso negado.', 'danger')
         return redirect(url_for('main.index'))
-    
+
     course = Course.query.get_or_404(course_id)
     student_id = request.form.get('student_id')
     enrollment_date = request.form.get('enrollment_date')
     discount_percentage = request.form.get('discount_percentage', 0)
-    
+
     if not student_id or not enrollment_date:
         flash('Dados incompletos.', 'danger')
         return redirect(url_for('admin.course_students', course_id=course_id))
-    
+
     # Check if student is already enrolled
     existing = Enrollment.query.filter_by(
         student_id=student_id,
         course_id=course_id,
         status='active'
     ).first()
-    
+
     if existing:
         flash('Aluno já está matriculado neste curso.', 'warning')
         return redirect(url_for('admin.course_students', course_id=course_id))
-    
+
     # Check course capacity
     active_enrollments = Enrollment.query.filter_by(
         course_id=course_id,
         status='active'
     ).count()
-    
+
     if active_enrollments >= course.max_students:
         flash('Curso já atingiu a capacidade máxima.', 'warning')
         return redirect(url_for('admin.course_students', course_id=course_id))
-    
+
     # Calculate monthly payment with discount
     monthly_payment = course.monthly_price
     if discount_percentage and float(discount_percentage) > 0:
         discount = float(discount_percentage) / 100
         monthly_payment = course.monthly_price * (1 - discount)
-    
+
     # Create enrollment
     enrollment = Enrollment()
     enrollment.student_id = student_id
@@ -1169,10 +1135,10 @@ def enroll_student(course_id):
     enrollment.status = 'active'
     enrollment.discount_percentage = discount_percentage
     enrollment.monthly_payment = monthly_payment
-    
+
     db.session.add(enrollment)
     db.session.commit()
-    
+
     flash('Aluno matriculado com sucesso!', 'success')
     return redirect(url_for('admin.course_students', course_id=course_id))
 
@@ -1182,52 +1148,52 @@ def quick_enroll():
     if current_user.user_type not in ['admin', 'secretary']:
         flash('Acesso negado.', 'danger')
         return redirect(url_for('main.index'))
-    
+
     if request.method == 'POST':
         student_id = request.form.get('student_id')
         course_id = request.form.get('course_id')
         enrollment_date = request.form.get('enrollment_date')
         discount_percentage = request.form.get('discount_percentage', 0)
-        
+
         if not student_id or not course_id or not enrollment_date:
             flash('Todos os campos são obrigatórios.', 'danger')
             return redirect(url_for('admin.quick_enroll'))
-        
+
         # Verify student and course exist
         student = Student.query.get(student_id)
         course = Course.query.get(course_id)
-        
+
         if not student or not course:
             flash('Aluno ou curso não encontrado.', 'danger')
             return redirect(url_for('admin.quick_enroll'))
-        
+
         # Check if already enrolled
         existing = Enrollment.query.filter_by(
             student_id=student_id,
             course_id=course_id,
             status='active'
         ).first()
-        
+
         if existing:
             flash('Aluno já está matriculado neste curso.', 'warning')
             return redirect(url_for('admin.quick_enroll'))
-        
+
         # Check course capacity
         active_enrollments = Enrollment.query.filter_by(
             course_id=course_id,
             status='active'
         ).count()
-        
+
         if active_enrollments >= course.max_students:
             flash('Curso já atingiu a capacidade máxima.', 'warning')
             return redirect(url_for('admin.quick_enroll'))
-        
+
         # Calculate monthly payment with discount
         monthly_payment = course.monthly_price
         if discount_percentage and float(discount_percentage) > 0:
             discount = float(discount_percentage) / 100
             monthly_payment = course.monthly_price * (1 - discount)
-        
+
         # Create enrollment
         enrollment = Enrollment()
         enrollment.student_id = student_id
@@ -1236,17 +1202,17 @@ def quick_enroll():
         enrollment.status = 'active'
         enrollment.discount_percentage = discount_percentage
         enrollment.monthly_payment = monthly_payment
-        
+
         db.session.add(enrollment)
         db.session.commit()
-        
+
         flash('Matrícula realizada com sucesso!', 'success')
         return redirect(url_for('admin.view_student', student_id=student_id))
-    
+
     # GET request - show form
     students = db.session.query(Student, User).join(User, Student.user_id == User.id).filter(User.is_active == True).all()
     courses = Course.query.filter_by(is_active=True).all()
-    
+
     return render_template('admin/quick_enroll.html', students=students, courses=courses)
 
 @admin.route('/reports')
@@ -1255,17 +1221,17 @@ def reports():
     if current_user.user_type not in ['admin', 'secretary']:
         flash('Acesso negado.', 'danger')
         return redirect(url_for('main.index'))
-    
+
     from sqlalchemy import func, extract
-    
+
     # Estatísticas gerais
     total_students = Student.query.count()
     active_students = db.session.query(Student).join(User).filter(User.is_active == True).count()
     inactive_students = total_students - active_students
-    
+
     total_courses = Course.query.filter_by(is_active=True).count()
     total_teachers = Teacher.query.count()
-    
+
     # Alunos sem matrícula ativa
     students_without_enrollment = db.session.query(Student, User).join(
         User, Student.user_id == User.id
@@ -1275,13 +1241,13 @@ def reports():
         Enrollment.id == None,
         User.is_active == True
     ).all()
-    
+
     # Cursos sem professor
     courses_without_teacher = Course.query.filter(
         Course.teacher_id == None,
         Course.is_active == True
     ).all()
-    
+
     # Análise de inadimplência
     today = datetime.now().date()
     pending_payments = db.session.query(Payment, Student, User).join(
@@ -1289,7 +1255,7 @@ def reports():
     ).join(
         User, Student.user_id == User.id
     ).filter(Payment.status == 'pending').all()
-    
+
     overdue_payments = db.session.query(Payment, Student, User).join(
         Student, Payment.student_id == Student.id
     ).join(
@@ -1298,25 +1264,25 @@ def reports():
         Payment.status.in_(['pending', 'overdue']),
         Payment.due_date < today
     ).all()
-    
+
     # Taxa de inadimplência
     total_payments = Payment.query.count()
     overdue_count = len(overdue_payments)
     default_rate = (overdue_count / total_payments * 100) if total_payments > 0 else 0
-    
+
     # Receita mensal
     current_month_revenue = db.session.query(func.sum(Payment.amount)).filter(
         Payment.status == 'paid',
         extract('month', Payment.payment_date) == datetime.now().month,
         extract('year', Payment.payment_date) == datetime.now().year
     ).scalar() or 0
-    
+
     # Receita perdida por inadimplência
     lost_revenue = db.session.query(func.sum(Payment.amount)).filter(
         Payment.status.in_(['pending', 'overdue']),
         Payment.due_date < today
     ).scalar() or 0
-    
+
     # Matrículas por curso com detalhes financeiros
     enrollment_stats = db.session.query(
         Course.name,
@@ -1328,7 +1294,7 @@ def reports():
     ).filter(
         Enrollment.status == 'active'
     ).group_by(Course.id, Course.name, Course.monthly_price).all()
-    
+
     # Análise de crescimento (últimos 12 meses)
     growth_data = []
     for i in range(12):
@@ -1341,7 +1307,7 @@ def reports():
             'month': target_date.strftime('%m/%Y'),
             'enrollments': enrollments_count
         })
-    
+
     # Top 5 alunos inadimplentes
     top_defaulters = db.session.query(
         User.full_name,
@@ -1357,7 +1323,7 @@ def reports():
     ).group_by(User.id, User.full_name).order_by(
         func.sum(Payment.amount).desc()
     ).limit(5).all()
-    
+
     return render_template('admin/reports.html',
                          total_students=total_students,
                          active_students=active_students,
@@ -1381,9 +1347,9 @@ def financial_summary():
     if current_user.user_type not in ['admin', 'secretary']:
         flash('Acesso negado.', 'danger')
         return redirect(url_for('main.index'))
-    
+
     from sqlalchemy import func, extract
-    
+
     # Receita por mês (últimos 12 meses)
     monthly_revenue = db.session.query(
         extract('year', Payment.payment_date).label('year'),
@@ -1396,7 +1362,7 @@ def financial_summary():
         extract('year', Payment.payment_date),
         extract('month', Payment.payment_date)
     ).order_by('year', 'month').all()
-    
+
     # Inadimplência
     overdue_payments = db.session.query(Payment, Student, User).join(
         Student, Payment.student_id == Student.id
@@ -1406,12 +1372,12 @@ def financial_summary():
         Payment.status == 'pending',
         Payment.due_date < datetime.now().date()
     ).all()
-    
+
     overdue_amount = db.session.query(func.sum(Payment.amount)).filter(
         Payment.status == 'pending',
         Payment.due_date < datetime.now().date()
     ).scalar() or 0
-    
+
     # Receita por curso
     course_revenue = db.session.query(
         Course.name,
@@ -1423,7 +1389,7 @@ def financial_summary():
     ).filter(
         Payment.status == 'paid'
     ).group_by(Course.id, Course.name).all()
-    
+
     return render_template('admin/financial_summary.html',
                          monthly_revenue=monthly_revenue,
                          overdue_payments=overdue_payments,
@@ -1436,39 +1402,39 @@ def download_material(material_id):
     if current_user.user_type not in ['admin', 'secretary', 'teacher', 'student']:
         flash('Acesso negado.', 'danger')
         return redirect(url_for('main.index'))
-    
+
     material = Material.query.get_or_404(material_id)
-    
+
     # Check if user has access to this material
     if current_user.user_type == 'student':
         student = Student.query.filter_by(user_id=current_user.id).first()
         if not student:
             flash('Perfil de estudante não encontrado.', 'danger')
             return redirect(url_for('main.index'))
-        
+
         # Check if student is enrolled in the course
         enrollment = Enrollment.query.filter_by(
             student_id=student.id,
             course_id=material.course_id,
             status='active'
         ).first()
-        
+
         if not enrollment:
             flash('Você não tem acesso a este material.', 'danger')
             return redirect(url_for('student.student_dashboard'))
-    
+
     elif current_user.user_type == 'teacher':
         teacher = Teacher.query.filter_by(user_id=current_user.id).first()
         if not teacher:
             flash('Perfil de professor não encontrado.', 'danger')
             return redirect(url_for('main.index'))
-        
+
         # Check if teacher teaches this course
         course = Course.query.get(material.course_id)
         if course and course.teacher_id != teacher.id:
             flash('Você não tem acesso a este material.', 'danger')
             return redirect(url_for('teacher.teacher_dashboard'))
-    
+
     upload_folder = current_app.config.get('UPLOAD_FOLDER', 'uploads')
     return send_from_directory(upload_folder, material.filename, as_attachment=True)
 
@@ -1477,19 +1443,19 @@ def download_material(material_id):
 def delete_material(material_id):
     if current_user.user_type not in ['admin', 'secretary']:
         return jsonify({'error': 'Acesso negado'}), 403
-    
+
     material = Material.query.get_or_404(material_id)
-    
+
     # Delete file from filesystem
     upload_folder = current_app.config.get('UPLOAD_FOLDER', 'uploads')
     file_path = os.path.join(upload_folder, material.filename)
     if os.path.exists(file_path):
         os.remove(file_path)
-    
+
     # Delete from database
     db.session.delete(material)
     db.session.commit()
-    
+
     return jsonify({'success': True, 'message': 'Material excluído com sucesso'})
 
 @admin.route('/course/<int:course_id>/upload-material', methods=['POST'])
@@ -1498,9 +1464,9 @@ def upload_material(course_id):
     if current_user.user_type not in ['admin', 'secretary', 'teacher']:
         flash('Acesso negado.', 'danger')
         return redirect(url_for('main.index'))
-    
+
     course = Course.query.get_or_404(course_id)
-    
+
     # Check if teacher is uploading for their own course
 
 
@@ -1509,20 +1475,23 @@ def upload_material(course_id):
 def generate_monthly_payments():
     if current_user.user_type not in ['admin', 'secretary']:
         return jsonify({'error': 'Acesso negado'}), 403
-    
+
     try:
+        import sqlite3
+        import shutil
+        import os
         from datetime import datetime, date, timedelta
         from calendar import monthrange
-        
+
         # Parâmetros
         month = int(request.json.get('month', datetime.now().month))
         year = int(request.json.get('year', datetime.now().year))
-        
+
         # Data de vencimento (dia 10 do mês)
         due_day = 10
         due_date = date(year, month, due_day)
         reference_month = date(year, month, 1)
-        
+
         # Buscar matrículas ativas
         active_enrollments = db.session.query(Enrollment, Student, Course).join(
             Student, Enrollment.student_id == Student.id
@@ -1531,16 +1500,16 @@ def generate_monthly_payments():
         ).filter(
             Enrollment.status == 'active'
         ).all()
-        
+
         created_payments = 0
-        
+
         for enrollment, student, course in active_enrollments:
             # Verificar se já existe pagamento para este mês
             existing_payment = Payment.query.filter_by(
                 student_id=student.id,
                 reference_month=reference_month
             ).first()
-            
+
             if not existing_payment:
                 # Criar novo pagamento
                 payment = Payment()
@@ -1550,45 +1519,46 @@ def generate_monthly_payments():
                 payment.status = 'pending'
                 payment.reference_month = reference_month
                 payment.notes = f'Mensalidade {month:02d}/{year} - {course.name}'
-                
+
                 db.session.add(payment)
                 created_payments += 1
-        
+
         db.session.commit()
-        
+
         return jsonify({
             'success': True,
             'created_payments': created_payments,
             'message': f'{created_payments} mensalidades geradas para {month:02d}/{year}'
         })
-        
+
     except Exception as e:
         db.session.rollback()
         current_app.logger.error(f'Error generating payments: {e}')
         return jsonify({'error': 'Erro ao gerar mensalidades'}), 500
+
 
 @admin.route('/payment/<int:payment_id>/status')
 @login_required
 def check_payment_status(payment_id):
     """Verifica status de pagamento em tempo real"""
     payment = Payment.query.get_or_404(payment_id)
-    
+
     # Verificar se há transação associada
     transaction = PaymentTransaction.query.filter_by(payment_id=payment_id).first()
-    
+
     if transaction and transaction.status == 'pending':
         # Consultar gateway para verificar status
         from payment_gateway import PaymentGateway
         gateway = PaymentGateway()
         result = gateway.check_payment_status(transaction.transaction_id)
-        
+
         if result['success'] and result['status'] == 'paid':
             # Atualizar pagamento
             payment.status = 'paid'
             payment.payment_date = datetime.now().date()
             transaction.status = 'completed'
             db.session.commit()
-    
+
     return jsonify({
         'status': payment.status,
         'payment_date': payment.payment_date.isoformat() if payment.payment_date else None
@@ -1600,7 +1570,7 @@ def calendar():
     if current_user.user_type not in ['admin', 'secretary', 'teacher']:
         flash('Acesso negado.', 'danger')
         return redirect(url_for('main.index'))
-    
+
     # Buscar horários com informações completas
     schedules = db.session.query(
         Schedule, Course, Teacher, User, Room
@@ -1613,7 +1583,7 @@ def calendar():
     ).join(
         Room, Schedule.room_id == Room.id
     ).filter(Schedule.is_active == True).all()
-    
+
     return render_template('admin/calendar.html', schedules=schedules)
 
 @admin.route('/experimental-classes')
@@ -1622,7 +1592,7 @@ def experimental_classes():
     if current_user.user_type not in ['admin', 'secretary']:
         flash('Acesso negado.', 'danger')
         return redirect(url_for('main.index'))
-    
+
     experimental_classes = ExperimentalClass.query.order_by(ExperimentalClass.created_at.desc()).all()
     return render_template('admin/experimental_classes.html', experimental_classes=experimental_classes)
 
@@ -1632,15 +1602,15 @@ def convert_to_student(class_id):
     if current_user.user_type not in ['admin', 'secretary']:
         flash('Acesso negado.', 'danger')
         return redirect(url_for('main.index'))
-    
+
     exp_class = ExperimentalClass.query.get_or_404(class_id)
-    
+
     # Verificar se já existe usuário com este email
     existing_user = User.query.filter_by(email=exp_class.email).first()
     if existing_user:
         flash('Já existe um usuário com este e-mail.', 'warning')
         return redirect(url_for('admin.experimental_classes'))
-    
+
     # Criar usuário
     user = User(
         username=exp_class.email.split('@')[0],
@@ -1652,20 +1622,20 @@ def convert_to_student(class_id):
     )
     db.session.add(user)
     db.session.flush()
-    
+
     # Criar perfil de aluno
     student = Student(
         user_id=user.id,
         notes=f'Convertido de aula experimental - Instrumento: {exp_class.instrument}'
     )
     db.session.add(student)
-    
+
     # Atualizar status da aula experimental
     exp_class.status = 'converted'
     exp_class.student_id = student.id
-    
+
     db.session.commit()
-    
+
     flash('Lead convertido em aluno com sucesso!', 'success')
     return redirect(url_for('admin.view_student', student_id=student.id))
 
@@ -1675,42 +1645,42 @@ def schedule_experimental_class(class_id):
     if current_user.user_type not in ['admin', 'secretary']:
         flash('Acesso negado.', 'danger')
         return redirect(url_for('main.index'))
-    
+
     exp_class = ExperimentalClass.query.get_or_404(class_id)
-    
+
     scheduled_date = request.form.get('scheduled_date')
     teacher_id = request.form.get('teacher_id')
     room_id = request.form.get('room_id')
-    
+
     if not scheduled_date:
         flash('Data é obrigatória.', 'danger')
         return redirect(url_for('admin.experimental_classes'))
-    
+
     exp_class.scheduled_date = datetime.strptime(scheduled_date, '%Y-%m-%dT%H:%M')
     exp_class.teacher_id = int(teacher_id) if teacher_id else None
     exp_class.room_id = int(room_id) if room_id else None
     exp_class.status = 'scheduled'
-    
+
     db.session.commit()
-    
+
     # Enviar email de confirmação
     try:
         send_email(
             subject='Aula Experimental Agendada - Sol Maior',
             body=f'''
             Olá {exp_class.name},
-            
+
             Sua aula experimental foi agendada para:
             Data: {exp_class.scheduled_date.strftime('%d/%m/%Y às %H:%M')}
             Instrumento: {exp_class.instrument}
-            
+
             Aguardamos você!
             ''',
             recipients=[exp_class.email]
         )
     except Exception as e:
         current_app.logger.error(f'Error sending email: {e}')
-    
+
     flash('Aula experimental agendada com sucesso!', 'success')
     return redirect(url_for('admin.experimental_classes'))
 
@@ -1720,7 +1690,7 @@ def contacts():
     if current_user.user_type not in ['admin', 'secretary']:
         flash('Acesso negado.', 'danger')
         return redirect(url_for('main.index'))
-    
+
     # Implementar modelo de contatos se necessário
     return render_template('admin/contacts.html')
 
@@ -1730,18 +1700,18 @@ def export_report(report_type):
     if current_user.user_type not in ['admin', 'secretary']:
         flash('Acesso negado.', 'danger')
         return redirect(url_for('main.index'))
-    
+
     try:
         import csv
         from io import StringIO
         from flask import make_response
-        
+
         output = StringIO()
-        
+
         if report_type == 'students':
             writer = csv.writer(output)
             writer.writerow(['Nome', 'Email', 'Telefone', 'Data Nascimento', 'Status'])
-            
+
             students = db.session.query(Student, User).join(User).all()
             for student, user in students:
                 writer.writerow([
@@ -1751,15 +1721,15 @@ def export_report(report_type):
                     student.birth_date.strftime('%d/%m/%Y') if student.birth_date else '',
                     'Ativo' if user.is_active else 'Inativo'
                 ])
-        
+
         elif report_type == 'payments':
             writer = csv.writer(output)
             writer.writerow(['Aluno', 'Valor', 'Vencimento', 'Status', 'Mês Referência'])
-            
+
             payments = db.session.query(Payment, Student, User).join(
                 Student, Payment.student_id == Student.id
             ).join(User, Student.user_id == User.id).all()
-            
+
             for payment, student, user in payments:
                 writer.writerow([
                     user.full_name,
@@ -1768,14 +1738,14 @@ def export_report(report_type):
                     payment.status,
                     payment.reference_month.strftime('%m/%Y')
                 ])
-        
+
         output.seek(0)
         response = make_response(output.getvalue())
         response.headers['Content-Type'] = 'text/csv'
         response.headers['Content-Disposition'] = f'attachment; filename={report_type}.csv'
-        
+
         return response
-        
+
     except Exception as e:
         current_app.logger.error(f'Export error: {e}')
         flash('Erro ao exportar relatório.', 'danger')
@@ -1786,9 +1756,9 @@ def export_report(report_type):
 def api_enrollment_stats():
     if current_user.user_type not in ['admin', 'secretary']:
         return jsonify({'error': 'Acesso negado'}), 403
-    
+
     from sqlalchemy import func, extract
-    
+
     # Matrículas por mês (últimos 12 meses)
     monthly_enrollments = db.session.query(
         extract('month', Enrollment.enrollment_date).label('month'),
@@ -1800,7 +1770,7 @@ def api_enrollment_stats():
         extract('year', Enrollment.enrollment_date),
         extract('month', Enrollment.enrollment_date)
     ).order_by('year', 'month').all()
-    
+
     # Alunos por curso
     students_by_course = db.session.query(
         Course.name,
@@ -1810,7 +1780,7 @@ def api_enrollment_stats():
     ).filter(
         Enrollment.status == 'active'
     ).group_by(Course.id, Course.name).all()
-    
+
     # Receita mensal
     monthly_revenue = db.session.query(
         extract('month', Payment.payment_date).label('month'),
@@ -1823,7 +1793,7 @@ def api_enrollment_stats():
         extract('year', Payment.payment_date),
         extract('month', Payment.payment_date)
     ).order_by('year', 'month').all()
-    
+
     return jsonify({
         'monthly_enrollments': [
             {'month': f'{int(m.month):02d}/{int(m.year)}', 'count': m.count}
@@ -1844,27 +1814,27 @@ def api_enrollment_stats():
 def create_backup():
     if current_user.user_type not in ['admin']:
         return jsonify({'error': 'Acesso negado'}), 403
-    
+
     try:
         import sqlite3
         import shutil
         import os
         from datetime import datetime
-        
+
         # Criar diretório de backup se não existir
         backup_dir = 'backups'
         os.makedirs(backup_dir, exist_ok=True)
-        
+
         # Nome do arquivo de backup
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
         backup_filename = f'backup_{timestamp}.db'
         backup_path = os.path.join(backup_dir, backup_filename)
-        
+
         # Copiar banco de dados
         db_path = 'instance/school.db'  # Ajuste conforme necessário
         if os.path.exists(db_path):
             shutil.copy2(db_path, backup_path)
-            
+
             return jsonify({
                 'success': True,
                 'filename': backup_filename,
@@ -1872,7 +1842,7 @@ def create_backup():
             })
         else:
             return jsonify({'error': 'Banco de dados não encontrado'}), 500
-            
+
     except Exception as e:
         current_app.logger.error(f'Backup error: {e}')
         return jsonify({'error': 'Erro ao criar backup'}), 500
@@ -1883,23 +1853,23 @@ def create_backup():
         if not teacher or course.teacher_id != teacher.id:
             flash('Você só pode enviar materiais para seus próprios cursos.', 'danger')
             return redirect(url_for('teacher.teacher_dashboard'))
-    
+
     title = request.form.get('title')
     description = request.form.get('description')
     file = request.files.get('file')
-    
+
     if not title or not file:
         flash('Título e arquivo são obrigatórios.', 'danger')
         return redirect(url_for('admin.course_materials', course_id=course_id))
-    
+
     if file.filename and not allowed_file(file.filename):
         flash('Tipo de arquivo não permitido.', 'danger')
         return redirect(url_for('admin.course_materials', course_id=course_id))
-    
+
     # Create upload directory if it doesn't exist
     upload_folder = current_app.config.get('UPLOAD_FOLDER', 'uploads')
     os.makedirs(upload_folder, exist_ok=True)
-    
+
     # Save file
     filename = secure_filename(file.filename or 'unnamed')
     # Add timestamp to avoid conflicts
@@ -1907,11 +1877,11 @@ def create_backup():
     filename = f"{name}_{int(datetime.now().timestamp())}{ext}"
     file_path = os.path.join(upload_folder, filename)
     file.save(file_path)
-    
+
     # Get file info
     file_size = os.path.getsize(file_path)
     file_type = ext[1:].lower() if ext else None
-    
+
     # Create material record
     material = Material()
     material.title = title
@@ -1922,10 +1892,10 @@ def create_backup():
     material.course_id = course_id
     material.uploaded_by_id = current_user.id
     material.uploaded_at = datetime.now()
-    
+
     db.session.add(material)
     db.session.commit()
-    
+
     flash('Material enviado com sucesso!', 'success')
     return redirect(url_for('admin.course_materials', course_id=course_id))
 
@@ -1935,39 +1905,39 @@ def preview_material(material_id):
     if current_user.user_type not in ['admin', 'secretary', 'teacher', 'student']:
         flash('Acesso negado.', 'danger')
         return redirect(url_for('main.index'))
-    
+
     material = Material.query.get_or_404(material_id)
-    
+
     # Same access control as download
     if current_user.user_type == 'student':
         student = Student.query.filter_by(user_id=current_user.id).first()
         if not student:
             flash('Perfil de estudante não encontrado.', 'danger')
             return redirect(url_for('main.index'))
-        
+
         enrollment = Enrollment.query.filter_by(
             student_id=student.id,
             course_id=material.course_id,
             status='active'
         ).first()
-        
+
         if not enrollment:
             flash('Você não tem acesso a este material.', 'danger')
             return redirect(url_for('student.student_dashboard'))
-    
+
     elif current_user.user_type == 'teacher':
         teacher = Teacher.query.filter_by(user_id=current_user.id).first()
         if not teacher:
             flash('Perfil de professor não encontrado.', 'danger')
             return redirect(url_for('main.index'))
-        
+
         course = Course.query.get(material.course_id)
         if course and course.teacher_id != teacher.id:
             flash('Você não tem acesso a este material.', 'danger')
             return redirect(url_for('teacher.teacher_dashboard'))
-    
+
     upload_folder = current_app.config.get('UPLOAD_FOLDER', 'uploads')
-    
+
     # For preview, serve inline instead of as attachment
     if material.file_type in ['pdf', 'jpg', 'jpeg', 'png', 'gif']:
         return send_from_directory(upload_folder, material.filename)
