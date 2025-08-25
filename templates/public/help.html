@@ -123,7 +123,7 @@
                                     <i class="fas fa-calendar-alt fa-3x text-success mb-3"></i>
                                     <h5>Meus Horários</h5>
                                     <p>Visualize suas aulas agendadas, horários e salas.</p>
-                                    <a href="{{ url_for('student.schedule') }}" class="btn btn-success">Ver Horários</a>
+                                    <a href="{{ url_for('student_bp.student_dashboard') }}" class="btn btn-success">Ver Horários</a>
                                 </div>
                             </div>
                         </div>
@@ -133,7 +133,7 @@
                                     <i class="fas fa-credit-card fa-3x text-warning mb-3"></i>
                                     <h5>Pagamentos</h5>
                                     <p>Acompanhe suas mensalidades e faça pagamentos online.</p>
-                                    <a href="{{ url_for('student.payments') }}" class="btn btn-warning">Ver Pagamentos</a>
+                                    <a href="{{ url_for('student_bp.student_dashboard') }}" class="btn btn-warning">Ver Pagamentos</a>
                                 </div>
                             </div>
                         </div>
@@ -143,7 +143,7 @@
                                     <i class="fas fa-book fa-3x text-info mb-3"></i>
                                     <h5>Materiais</h5>
                                     <p>Acesse apostilas, exercícios e materiais do seu curso.</p>
-                                    <a href="{{ url_for('student.materials') }}" class="btn btn-info">Ver Materiais</a>
+                                    <a href="{{ url_for('student_bp.materials') }}" class="btn btn-info">Ver Materiais</a>
                                 </div>
                             </div>
                         </div>
@@ -194,7 +194,7 @@
                                     <i class="fas fa-clock fa-3x text-info mb-3"></i>
                                     <h5>Minha Agenda</h5>
                                     <p>Visualize suas aulas, horários e salas atribuídas.</p>
-                                    <a href="{{ url_for('teacher.schedule') }}" class="btn btn-info">Ver Agenda</a>
+                                    <a href="{{ url_for('teacher_bp.teacher_dashboard') }}" class="btn btn-info">Ver Agenda</a>
                                 </div>
                             </div>
                         </div>
@@ -204,7 +204,7 @@
                                     <i class="fas fa-users fa-3x text-success mb-3"></i>
                                     <h5>Meus Alunos</h5>
                                     <p>Acesse informações dos seus alunos matriculados.</p>
-                                    <a href="{{ url_for('teacher.students') }}" class="btn btn-success">Ver Alunos</a>
+                                    <a href="{{ url_for('teacher_bp.teacher_dashboard') }}" class="btn btn-success">Ver Alunos</a>
                                 </div>
                             </div>
                         </div>
@@ -214,7 +214,7 @@
                                     <i class="fas fa-chart-line fa-3x text-warning mb-3"></i>
                                     <h5>Dashboard</h5>
                                     <p>Visão geral das suas atividades e estatísticas.</p>
-                                    <a href="{{ url_for('teacher.dashboard') }}" class="btn btn-warning">Ver Dashboard</a>
+                                    <a href="{{ url_for('teacher_bp.teacher_dashboard') }}" class="btn btn-warning">Ver Dashboard</a>
                                 </div>
                             </div>
                         </div>
