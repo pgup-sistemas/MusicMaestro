@@ -1,5 +1,5 @@
 import os
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session, current_app, send_from_directory, jsonify
 from flask_login import login_user, logout_user, login_required, current_user
 from werkzeug.security import check_password_hash, generate_password_hash
@@ -613,7 +613,7 @@ def finances():
         return redirect(url_for('main.index'))
 
     payments = db.session.query(Payment, Student, User).join(Student, Payment.student_id == Student.id).join(User, Student.user_id == User.id).all()
-    return render_template('admin/finances.html', payments=payments)
+    return render_template('admin/finances.html', payments=payments, date=date)
 
 @admin.route('/payment/add', methods=['GET', 'POST'])
 @login_required
@@ -1394,7 +1394,8 @@ def financial_summary():
                          monthly_revenue=monthly_revenue,
                          overdue_payments=overdue_payments,
                          overdue_amount=overdue_amount,
-                         course_revenue=course_revenue)
+                         course_revenue=course_revenue,
+                         today=datetime.now().date())
 
 @admin.route('/material/<int:material_id>/download')
 @login_required
