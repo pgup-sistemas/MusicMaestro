@@ -123,24 +123,10 @@ class Enrollment(db.Model):
     student_id = db.Column(db.Integer, db.ForeignKey('students.id'), nullable=False)
     course_id = db.Column(db.Integer, db.ForeignKey('courses.id'), nullable=False)
     enrollment_date = db.Column(db.Date, default=date.today)
-    status = db.Column(db.String(20), default='active')  # active, suspended, completed, cancelled, pending
+    status = db.Column(db.String(20), default='active')  # active, completed, cancelled
     discount_percentage = db.Column(db.Numeric(5, 2), default=0)
-    discount_reason = db.Column(db.String(200))  # family, scholarship, promotion, etc.
     monthly_payment = db.Column(db.Numeric(10, 2))
-    start_date = db.Column(db.Date)
-    end_date = db.Column(db.Date)
-    completion_date = db.Column(db.Date)
     notes = db.Column(db.Text)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    
-    def calculate_monthly_payment(self):
-        """Calculate monthly payment with discount applied"""
-        if self.course and self.course.monthly_price:
-            base_price = float(self.course.monthly_price)
-            discount = float(self.discount_percentage or 0) / 100
-            return base_price * (1 - discount)
-        return 0
 
 class Schedule(db.Model):
     __tablename__ = 'schedules'
