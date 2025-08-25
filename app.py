@@ -24,11 +24,22 @@ def create_app():
     
     # Configuration
     app.secret_key = os.environ.get("SESSION_SECRET", "dev-secret-key")
-    app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL", "postgresql://user:password@localhost/musicschool")
-    app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
-        "pool_recycle": 300,
-        "pool_pre_ping": True,
-    }
+    # Use SQLite for local development if no DATABASE_URL is provided
+    database_url = os.environ.get("DATABASE_URL")
+    if database_url:
+        app.config["SQLALCHEMY_DATABASE_URI"] = database_url
+    else:
+        # Create instance directory if it doesn't exist
+        os.makedirs(os.path.join(app.instance_path), exist_ok=True)
+        app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{os.path.join(app.instance_path, 'school.db')}"
+    # Configure engine options based on database type
+    if "postgresql" in app.config["SQLALCHEMY_DATABASE_URI"]:
+        app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
+            "pool_recycle": 300,
+            "pool_pre_ping": True,
+        }
+    else:
+        app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {}
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
     
     # Mail configuration

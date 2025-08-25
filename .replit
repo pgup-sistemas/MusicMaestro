@@ -9,7 +9,7 @@ deploymentTarget = "autoscale"
 run = ["gunicorn", "--bind", "0.0.0.0:5000", "main:app"]
 
 [workflows]
-runButton = "Escola Sol Maior"
+runButton = "Sistema Escola Sol Maior"
 
 [[workflows.workflow]]
 name = "Project"
@@ -49,6 +49,15 @@ args = "python main.py"
 
 [[workflows.workflow]]
 name = "Escola Sol Maior"
+author = 21158491
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python main.py"
+
+[[workflows.workflow]]
+name = "Sistema Escola Sol Maior"
 author = 21158491
 mode = "sequential"
 
