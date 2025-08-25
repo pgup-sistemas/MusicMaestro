@@ -9,6 +9,7 @@ from app import db
 from models import User, Student, Teacher, Room, Course, Enrollment, Schedule, Payment, Material, ExperimentalClass
 from forms import *
 from utils import send_email, allowed_file
+from audit_logger import AuditLogger
 
 # Create blueprints
 main = Blueprint('main', __name__)
@@ -19,12 +20,14 @@ teacher_bp = Blueprint('teacher', __name__, url_prefix='/teacher')
 public = Blueprint('public', __name__, url_prefix='/public')
 
 def register_blueprints(app):
+    from api import api
     app.register_blueprint(main)
     app.register_blueprint(auth)
     app.register_blueprint(admin)
     app.register_blueprint(student_bp)
     app.register_blueprint(teacher_bp)
     app.register_blueprint(public)
+    app.register_blueprint(api)
 
 # Main routes
 @main.route('/')
@@ -51,10 +54,12 @@ def login():
         user = User.query.filter_by(email=form.email.data).first()
         if user and user.is_active and form.password.data and check_password_hash(user.password_hash, form.password.data):
             login_user(user)
+            AuditLogger.log_login(success=True)
             next_page = request.args.get('next')
             if not next_page or not next_page.startswith('/'):
                 next_page = url_for('main.index')
             return redirect(next_page)
+        AuditLogger.log_login(success=False)
         flash('E-mail ou senha inválidos.', 'danger')
     
     return render_template('login.html', form=form)
@@ -1611,6 +1616,114 @@ def calendar():
     
     return render_template('admin/calendar.html', schedules=schedules)
 
+@admin.route('/experimental-classes')
+@login_required
+def experimental_classes():
+    if current_user.user_type not in ['admin', 'secretary']:
+        flash('Acesso negado.', 'danger')
+        return redirect(url_for('main.index'))
+    
+    experimental_classes = ExperimentalClass.query.order_by(ExperimentalClass.created_at.desc()).all()
+    return render_template('admin/experimental_classes.html', experimental_classes=experimental_classes)
+
+@admin.route('/experimental-class/<int:class_id>/convert', methods=['POST'])
+@login_required
+def convert_to_student(class_id):
+    if current_user.user_type not in ['admin', 'secretary']:
+        flash('Acesso negado.', 'danger')
+        return redirect(url_for('main.index'))
+    
+    exp_class = ExperimentalClass.query.get_or_404(class_id)
+    
+    # Verificar se já existe usuário com este email
+    existing_user = User.query.filter_by(email=exp_class.email).first()
+    if existing_user:
+        flash('Já existe um usuário com este e-mail.', 'warning')
+        return redirect(url_for('admin.experimental_classes'))
+    
+    # Criar usuário
+    user = User(
+        username=exp_class.email.split('@')[0],
+        email=exp_class.email,
+        password_hash=generate_password_hash('123456'),
+        user_type='student',
+        full_name=exp_class.name,
+        phone=exp_class.phone
+    )
+    db.session.add(user)
+    db.session.flush()
+    
+    # Criar perfil de aluno
+    student = Student(
+        user_id=user.id,
+        notes=f'Convertido de aula experimental - Instrumento: {exp_class.instrument}'
+    )
+    db.session.add(student)
+    
+    # Atualizar status da aula experimental
+    exp_class.status = 'converted'
+    exp_class.student_id = student.id
+    
+    db.session.commit()
+    
+    flash('Lead convertido em aluno com sucesso!', 'success')
+    return redirect(url_for('admin.view_student', student_id=student.id))
+
+@admin.route('/experimental-class/<int:class_id>/schedule', methods=['POST'])
+@login_required
+def schedule_experimental_class(class_id):
+    if current_user.user_type not in ['admin', 'secretary']:
+        flash('Acesso negado.', 'danger')
+        return redirect(url_for('main.index'))
+    
+    exp_class = ExperimentalClass.query.get_or_404(class_id)
+    
+    scheduled_date = request.form.get('scheduled_date')
+    teacher_id = request.form.get('teacher_id')
+    room_id = request.form.get('room_id')
+    
+    if not scheduled_date:
+        flash('Data é obrigatória.', 'danger')
+        return redirect(url_for('admin.experimental_classes'))
+    
+    exp_class.scheduled_date = datetime.strptime(scheduled_date, '%Y-%m-%dT%H:%M')
+    exp_class.teacher_id = int(teacher_id) if teacher_id else None
+    exp_class.room_id = int(room_id) if room_id else None
+    exp_class.status = 'scheduled'
+    
+    db.session.commit()
+    
+    # Enviar email de confirmação
+    try:
+        send_email(
+            subject='Aula Experimental Agendada - Sol Maior',
+            body=f'''
+            Olá {exp_class.name},
+            
+            Sua aula experimental foi agendada para:
+            Data: {exp_class.scheduled_date.strftime('%d/%m/%Y às %H:%M')}
+            Instrumento: {exp_class.instrument}
+            
+            Aguardamos você!
+            ''',
+            recipients=[exp_class.email]
+        )
+    except Exception as e:
+        current_app.logger.error(f'Error sending email: {e}')
+    
+    flash('Aula experimental agendada com sucesso!', 'success')
+    return redirect(url_for('admin.experimental_classes'))
+
+@admin.route('/contacts')
+@login_required
+def contacts():
+    if current_user.user_type not in ['admin', 'secretary']:
+        flash('Acesso negado.', 'danger')
+        return redirect(url_for('main.index'))
+    
+    # Implementar modelo de contatos se necessário
+    return render_template('admin/contacts.html')
+
 @admin.route('/export-report/<report_type>')
 @login_required
 def export_report(report_type):
@@ -1667,6 +1780,102 @@ def export_report(report_type):
         current_app.logger.error(f'Export error: {e}')
         flash('Erro ao exportar relatório.', 'danger')
         return redirect(url_for('admin.reports'))
+
+@admin.route('/api/charts/enrollment-stats')
+@login_required
+def api_enrollment_stats():
+    if current_user.user_type not in ['admin', 'secretary']:
+        return jsonify({'error': 'Acesso negado'}), 403
+    
+    from sqlalchemy import func, extract
+    
+    # Matrículas por mês (últimos 12 meses)
+    monthly_enrollments = db.session.query(
+        extract('month', Enrollment.enrollment_date).label('month'),
+        extract('year', Enrollment.enrollment_date).label('year'),
+        func.count(Enrollment.id).label('count')
+    ).filter(
+        Enrollment.enrollment_date >= datetime.now().replace(year=datetime.now().year-1)
+    ).group_by(
+        extract('year', Enrollment.enrollment_date),
+        extract('month', Enrollment.enrollment_date)
+    ).order_by('year', 'month').all()
+    
+    # Alunos por curso
+    students_by_course = db.session.query(
+        Course.name,
+        func.count(Enrollment.id).label('students')
+    ).join(
+        Enrollment, Course.id == Enrollment.course_id
+    ).filter(
+        Enrollment.status == 'active'
+    ).group_by(Course.id, Course.name).all()
+    
+    # Receita mensal
+    monthly_revenue = db.session.query(
+        extract('month', Payment.payment_date).label('month'),
+        extract('year', Payment.payment_date).label('year'),
+        func.sum(Payment.amount).label('revenue')
+    ).filter(
+        Payment.status == 'paid',
+        Payment.payment_date >= datetime.now().replace(year=datetime.now().year-1)
+    ).group_by(
+        extract('year', Payment.payment_date),
+        extract('month', Payment.payment_date)
+    ).order_by('year', 'month').all()
+    
+    return jsonify({
+        'monthly_enrollments': [
+            {'month': f'{int(m.month):02d}/{int(m.year)}', 'count': m.count}
+            for m in monthly_enrollments
+        ],
+        'students_by_course': [
+            {'course': s.name, 'students': s.students}
+            for s in students_by_course
+        ],
+        'monthly_revenue': [
+            {'month': f'{int(r.month):02d}/{int(r.year)}', 'revenue': float(r.revenue or 0)}
+            for r in monthly_revenue
+        ]
+    })
+
+@admin.route('/api/backup', methods=['POST'])
+@login_required
+def create_backup():
+    if current_user.user_type not in ['admin']:
+        return jsonify({'error': 'Acesso negado'}), 403
+    
+    try:
+        import sqlite3
+        import shutil
+        import os
+        from datetime import datetime
+        
+        # Criar diretório de backup se não existir
+        backup_dir = 'backups'
+        os.makedirs(backup_dir, exist_ok=True)
+        
+        # Nome do arquivo de backup
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        backup_filename = f'backup_{timestamp}.db'
+        backup_path = os.path.join(backup_dir, backup_filename)
+        
+        # Copiar banco de dados
+        db_path = 'instance/school.db'  # Ajuste conforme necessário
+        if os.path.exists(db_path):
+            shutil.copy2(db_path, backup_path)
+            
+            return jsonify({
+                'success': True,
+                'filename': backup_filename,
+                'message': f'Backup criado: {backup_filename}'
+            })
+        else:
+            return jsonify({'error': 'Banco de dados não encontrado'}), 500
+            
+    except Exception as e:
+        current_app.logger.error(f'Backup error: {e}')
+        return jsonify({'error': 'Erro ao criar backup'}), 500
 
 
     if current_user.user_type == 'teacher':

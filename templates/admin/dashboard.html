@@ -61,7 +61,42 @@
     <div class="col-md-6">
         <div class="card">
             <div class="card-header">
-                <h5><i class="fas fa-chart-line me-2"></i>Ações Rápidas</h5>
+                <h5><i class="fas fa-chart-line me-2"></i>Matrículas por Mês</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="enrollmentChart" height="300"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-chart-pie me-2"></i>Alunos por Curso</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="coursesChart" height="300"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-dollar-sign me-2"></i>Receita Mensal</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="revenueChart" height="300"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-tools me-2"></i>Ações Rápidas</h5>
             </div>
             <div class="card-body">
                 <div class="list-group list-group-flush">
@@ -71,29 +106,112 @@
                     <a href="{{ url_for('admin.add_teacher') }}" class="list-group-item list-group-item-action">
                         <i class="fas fa-chalkboard-teacher me-2"></i>Adicionar Novo Professor
                     </a>
-                    <a href="{{ url_for('admin.add_course') }}" class="list-group-item list-group-item-action">
-                        <i class="fas fa-book me-2"></i>Criar Novo Curso
+                    <a href="{{ url_for('admin.experimental_classes') }}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-play-circle me-2"></i>Aulas Experimentais
                     </a>
-                    <a href="{{ url_for('admin.add_room') }}" class="list-group-item list-group-item-action">
-                        <i class="fas fa-door-open me-2"></i>Cadastrar Nova Sala
-                    </a>
+                    <button class="list-group-item list-group-item-action" onclick="createBackup()">
+                        <i class="fas fa-download me-2"></i>Criar Backup
+                    </button>
                 </div>
             </div>
         </div>
     </div>
-    
-    <div class="col-md-6">
-        <div class="card">
-            <div class="card-header">
-                <h5><i class="fas fa-calendar me-2"></i>Agenda de Hoje</h5>
-            </div>
-            <div class="card-body">
-                <p class="text-muted">
-                    <i class="fas fa-info-circle me-2"></i>
-                    Implementar listagem de aulas do dia atual
-                </p>
-            </div>
-        </div>
-    </div>
 </div>
+
+<script>
+// Carregar dados dos gráficos
+fetch('/admin/api/charts/enrollment-stats')
+    .then(response => response.json())
+    .then(data => {
+        // Gráfico de Matrículas
+        const enrollmentCtx = document.getElementById('enrollmentChart').getContext('2d');
+        new Chart(enrollmentCtx, {
+            type: 'line',
+            data: {
+                labels: data.monthly_enrollments.map(item => item.month),
+                datasets: [{
+                    label: 'Matrículas',
+                    data: data.monthly_enrollments.map(item => item.count),
+                    borderColor: 'rgb(75, 192, 192)',
+                    backgroundColor: 'rgba(75, 192, 192, 0.1)',
+                    tension: 0.1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false
+            }
+        });
+        
+        // Gráfico de Cursos
+        const coursesCtx = document.getElementById('coursesChart').getContext('2d');
+        new Chart(coursesCtx, {
+            type: 'doughnut',
+            data: {
+                labels: data.students_by_course.map(item => item.course),
+                datasets: [{
+                    data: data.students_by_course.map(item => item.students),
+                    backgroundColor: [
+                        '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0',
+                        '#9966FF', '#FF9F40', '#FF6384', '#C9CBCF'
+                    ]
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false
+            }
+        });
+        
+        // Gráfico de Receita
+        const revenueCtx = document.getElementById('revenueChart').getContext('2d');
+        new Chart(revenueCtx, {
+            type: 'bar',
+            data: {
+                labels: data.monthly_revenue.map(item => item.month),
+                datasets: [{
+                    label: 'Receita (R$)',
+                    data: data.monthly_revenue.map(item => item.revenue),
+                    backgroundColor: 'rgba(54, 162, 235, 0.8)',
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return 'R$ ' + value.toLocaleString('pt-BR');
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    });
+
+function createBackup() {
+    if (confirm('Criar backup do sistema?')) {
+        fetch('/admin/api/backup', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('[name=csrf_token]').value
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Backup criado com sucesso: ' + data.filename);
+            } else {
+                alert('Erro ao criar backup: ' + data.error);
+            }
+        });
+    }
+}
+</script>
 {% endblock %}

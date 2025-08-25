@@ -1,0 +1,177 @@
+
+{% extends "base.html" %}
+
+{% block title %}Aulas Experimentais - Admin{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1><i class="fas fa-play-circle me-2"></i>Aulas Experimentais</h1>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card border-info">
+            <div class="card-body text-center">
+                <h5 class="text-info">Pendentes</h5>
+                <h3>{{ experimental_classes|selectattr('status', 'equalto', 'pending')|list|length }}</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-warning">
+            <div class="card-body text-center">
+                <h5 class="text-warning">Agendadas</h5>
+                <h3>{{ experimental_classes|selectattr('status', 'equalto', 'scheduled')|list|length }}</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-success">
+            <div class="card-body text-center">
+                <h5 class="text-success">Realizadas</h5>
+                <h3>{{ experimental_classes|selectattr('status', 'equalto', 'completed')|list|length }}</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-primary">
+            <div class="card-body text-center">
+                <h5 class="text-primary">Convertidas</h5>
+                <h3>{{ experimental_classes|selectattr('status', 'equalto', 'converted')|list|length }}</h3>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Nome</th>
+                        <th>Instrumento</th>
+                        <th>Experiência</th>
+                        <th>Contato</th>
+                        <th>Solicitado em</th>
+                        <th>Status</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for exp_class in experimental_classes %}
+                    <tr>
+                        <td>{{ exp_class.name }}</td>
+                        <td>{{ exp_class.instrument }}</td>
+                        <td>
+                            <span class="badge bg-secondary">
+                                {% if exp_class.experience_level == 'none' %}Nunca tocou
+                                {% elif exp_class.experience_level == 'beginner' %}Iniciante
+                                {% elif exp_class.experience_level == 'intermediate' %}Intermediário
+                                {% elif exp_class.experience_level == 'advanced' %}Avançado
+                                {% endif %}
+                            </span>
+                        </td>
+                        <td>
+                            <small>
+                                <i class="fas fa-envelope me-1"></i>{{ exp_class.email }}<br>
+                                <i class="fas fa-phone me-1"></i>{{ exp_class.phone }}
+                            </small>
+                        </td>
+                        <td>{{ exp_class.created_at.strftime('%d/%m/%Y %H:%M') }}</td>
+                        <td>
+                            {% if exp_class.status == 'pending' %}
+                                <span class="badge bg-info">Pendente</span>
+                            {% elif exp_class.status == 'scheduled' %}
+                                <span class="badge bg-warning">Agendada</span>
+                            {% elif exp_class.status == 'completed' %}
+                                <span class="badge bg-success">Realizada</span>
+                            {% elif exp_class.status == 'converted' %}
+                                <span class="badge bg-primary">Convertida</span>
+                            {% elif exp_class.status == 'cancelled' %}
+                                <span class="badge bg-danger">Cancelada</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if exp_class.status == 'pending' %}
+                                <button class="btn btn-sm btn-warning" onclick="scheduleClass({{ exp_class.id }})">
+                                    <i class="fas fa-calendar-plus"></i> Agendar
+                                </button>
+                                <button class="btn btn-sm btn-success" onclick="convertToStudent({{ exp_class.id }})">
+                                    <i class="fas fa-user-plus"></i> Converter
+                                </button>
+                            {% elif exp_class.status == 'completed' and not exp_class.student_id %}
+                                <button class="btn btn-sm btn-success" onclick="convertToStudent({{ exp_class.id }})">
+                                    <i class="fas fa-user-plus"></i> Converter
+                                </button>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Agendar -->
+<div class="modal fade" id="scheduleModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST" id="scheduleForm">
+                <div class="modal-header">
+                    <h5 class="modal-title">Agendar Aula Experimental</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Data e Hora</label>
+                        <input type="datetime-local" class="form-control" name="scheduled_date" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Professor</label>
+                        <select class="form-control" name="teacher_id">
+                            <option value="">Selecionar professor</option>
+                            <!-- Carregar professores via JavaScript -->
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Sala</label>
+                        <select class="form-control" name="room_id">
+                            <option value="">Selecionar sala</option>
+                            <!-- Carregar salas via JavaScript -->
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-warning">Agendar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function scheduleClass(classId) {
+    document.getElementById('scheduleForm').action = `/admin/experimental-class/${classId}/schedule`;
+    const modal = new bootstrap.Modal(document.getElementById('scheduleModal'));
+    modal.show();
+}
+
+function convertToStudent(classId) {
+    if (confirm('Converter esta solicitação em um novo aluno?')) {
+        fetch(`/admin/experimental-class/${classId}/convert`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrf_token]').value
+            }
+        }).then(response => {
+            if (response.ok) {
+                location.reload();
+            }
+        });
+    }
+}
+</script>
+{% endblock %}
