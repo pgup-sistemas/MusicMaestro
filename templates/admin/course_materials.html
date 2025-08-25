@@ -124,7 +124,14 @@
                                             -
                                         {% endif %}
                                     </td>
-                                    <td>{{ material.uploaded_by.full_name if material.uploaded_by else '-' }}</td>
+                                    <td>
+                                        {% if material.uploaded_by_id %}
+                                            {% set uploader = material.uploaded_by %}
+                                            {{ uploader.full_name if uploader else 'Usuário removido' }}
+                                        {% else %}
+                                            Sistema
+                                        {% endif %}
+                                    </td>
                                     <td>{{ material.uploaded_at|date_br }}</td>
                                     <td>
                                         <div class="btn-group btn-group-sm" role="group">

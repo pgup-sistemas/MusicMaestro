@@ -167,6 +167,9 @@ class Material(db.Model):
     uploaded_at = db.Column(db.DateTime, default=datetime.utcnow)
     uploaded_by_id = db.Column(db.Integer, db.ForeignKey('users.id'))
     is_public = db.Column(db.Boolean, default=False)
+    
+    # Relationships
+    uploaded_by = db.relationship('User', foreign_keys=[uploaded_by_id], backref='uploaded_materials')
 
 class PaymentTransaction(db.Model):
     __tablename__ = 'payment_transactions'

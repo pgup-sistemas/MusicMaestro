@@ -111,7 +111,7 @@ def dashboard():
     total_courses = Course.query.filter_by(is_active=True).count()
     pending_payments = Payment.query.filter_by(status='pending').count()
 
-    return render_template('admin/dashboard.html', 
+    return render_template('admin/dashboard.html',
                          total_students=total_students,
                          total_teachers=total_teachers,
                          total_courses=total_courses,
@@ -230,7 +230,7 @@ def view_student(student_id):
     enrollments = Enrollment.query.filter_by(student_id=student.id).all()
     payments = Payment.query.filter_by(student_id=student.id).order_by(Payment.due_date.desc()).all()
 
-    return render_template('admin/student_detail.html', student=student, user=user, 
+    return render_template('admin/student_detail.html', student=student, user=user,
                          enrollments=enrollments, payments=payments)
 
 @admin.route('/student/toggle/<int:student_id>')
@@ -720,7 +720,7 @@ def student_dashboard():
     enrollments = Enrollment.query.filter_by(student_id=student.id).all()
     recent_payments = Payment.query.filter_by(student_id=student.id).order_by(Payment.created_at.desc()).limit(5).all()
 
-    return render_template('student/dashboard.html', 
+    return render_template('student/dashboard.html',
                          student=student,
                          enrollments=enrollments,
                          recent_payments=recent_payments)
@@ -762,7 +762,7 @@ def teacher_dashboard():
     courses = Course.query.filter_by(teacher_id=teacher.id).all()
     schedules = Schedule.query.filter_by(teacher_id=teacher.id).all()
 
-    return render_template('teacher/dashboard.html', 
+    return render_template('teacher/dashboard.html',
                          teacher=teacher,
                          courses=courses,
                          schedules=schedules)
@@ -963,8 +963,8 @@ def view_course(course_id):
     # Get course schedules
     schedules = Schedule.query.filter_by(course_id=course_id).all()
 
-    return render_template('admin/course_detail.html', 
-                         course=course, 
+    return render_template('admin/course_detail.html',
+                         course=course,
                          enrollments=enrollments,
                          materials=materials,
                          schedules=schedules)
@@ -987,8 +987,8 @@ def course_students(course_id):
 
     today = date.today().strftime('%Y-%m-%d')
 
-    return render_template('admin/course_students.html', 
-                         course=course, 
+    return render_template('admin/course_students.html',
+                         course=course,
                          enrollments=enrollments,
                          today=today)
 
@@ -1013,8 +1013,8 @@ def course_materials(course_id):
         User, Material.uploaded_by_id == User.id
     ).filter(Material.course_id == course_id).order_by(Material.uploaded_at.desc()).all()
 
-    return render_template('admin/course_materials.html', 
-                         course=course, 
+    return render_template('admin/course_materials.html',
+                         course=course,
                          materials=[m.Material for m, u in materials])
 
 @admin.route('/teacher/<int:teacher_id>/schedule')
@@ -1036,8 +1036,8 @@ def teacher_schedule(teacher_id):
         Schedule.day_of_week, Schedule.start_time
     ).all()
 
-    return render_template('admin/teacher_schedule.html', 
-                         teacher=teacher, 
+    return render_template('admin/teacher_schedule.html',
+                         teacher=teacher,
                          user=user,
                          schedules=schedules)
 
@@ -1051,13 +1051,13 @@ def profile():
 @login_required
 def edit_profile():
     form = EditProfileForm()
-    
+
     # Pre-populate form with current user data
     if request.method == 'GET':
         form.full_name.data = current_user.full_name
         form.email.data = current_user.email
         form.phone.data = current_user.phone
-    
+
     if form.validate_on_submit():
         # Check if email is already taken by another user
         if form.email.data != current_user.email:
@@ -1065,20 +1065,20 @@ def edit_profile():
             if existing_user:
                 flash('Este e-mail já está em uso por outro usuário.', 'danger')
                 return render_template('edit_profile.html', form=form)
-        
+
         # Update user data
         current_user.full_name = form.full_name.data
         current_user.email = form.email.data
         current_user.phone = form.phone.data
-        
+
         # Update password if provided
         if form.password.data:
             current_user.password_hash = generate_password_hash(form.password.data)
-        
+
         db.session.commit()
         flash('Perfil atualizado com sucesso!', 'success')
         return redirect(url_for('main.profile'))
-    
+
     return render_template('edit_profile.html', form=form)
 
 # API Routes for AJAX calls
@@ -1512,6 +1512,200 @@ def upload_material(course_id):
     # Check if teacher is uploading for their own course
 
 
+    if current_user.user_type == 'teacher':
+        teacher = Teacher.query.filter_by(user_id=current_user.id).first()
+        if not teacher or course.teacher_id != teacher.id:
+            flash('Você só pode enviar materiais para seus próprios cursos.', 'danger')
+            return redirect(url_for('teacher.teacher_dashboard'))
+
+    title = request.form.get('title')
+    description = request.form.get('description')
+    file = request.files.get('file')
+
+    if not title or not file:
+        flash('Título e arquivo são obrigatórios.', 'danger')
+        return redirect(url_for('admin.course_materials', course_id=course_id))
+
+    if file.filename and not allowed_file(file.filename):
+        flash('Tipo de arquivo não permitido.', 'danger')
+        return redirect(url_for('admin.course_materials', course_id=course_id))
+
+    # Create upload directory if it doesn't exist
+    upload_folder = current_app.config.get('UPLOAD_FOLDER', 'uploads')
+    os.makedirs(upload_folder, exist_ok=True)
+
+    # Save file
+    filename = secure_filename(file.filename or 'unnamed')
+    # Add timestamp to avoid conflicts
+    name, ext = os.path.splitext(filename)
+    filename = f"{name}_{int(datetime.now().timestamp())}{ext}"
+    file_path = os.path.join(upload_folder, filename)
+    file.save(file_path)
+
+    # Get file info
+    file_size = os.path.getsize(file_path)
+    file_type = ext[1:].lower() if ext else None
+
+    # Create material record
+    material = Material()
+    material.title = title
+    material.description = description
+    material.filename = filename
+    material.file_type = file_type
+    material.file_size = file_size
+    material.course_id = course_id
+    material.uploaded_by_id = current_user.id
+    material.uploaded_at = datetime.now()
+
+    db.session.add(material)
+    db.session.commit()
+
+    flash('Material enviado com sucesso!', 'success')
+    return redirect(url_for('admin.course_materials', course_id=course_id))
+
+@admin.route('/material/<int:material_id>/preview')
+@login_required
+def preview_material(material_id):
+    if current_user.user_type not in ['admin', 'secretary', 'teacher', 'student']:
+        flash('Acesso negado.', 'danger')
+        return redirect(url_for('main.index'))
+
+    material = Material.query.get_or_404(material_id)
+
+    # Same access control as download
+    if current_user.user_type == 'student':
+        student = Student.query.filter_by(user_id=current_user.id).first()
+        if not student:
+            flash('Perfil de estudante não encontrado.', 'danger')
+            return redirect(url_for('main.index'))
+
+        enrollment = Enrollment.query.filter_by(
+            student_id=student.id,
+            course_id=material.course_id,
+            status='active'
+        ).first()
+
+        if not enrollment:
+            flash('Você não tem acesso a este material.', 'danger')
+            return redirect(url_for('student.student_dashboard'))
+
+    elif current_user.user_type == 'teacher':
+        teacher = Teacher.query.filter_by(user_id=current_user.id).first()
+        if not teacher:
+            flash('Perfil de professor não encontrado.', 'danger')
+            return redirect(url_for('main.index'))
+
+        course = Course.query.get(material.course_id)
+        if course and course.teacher_id != teacher.id:
+            flash('Você não tem acesso a este material.', 'danger')
+            return redirect(url_for('teacher.teacher_dashboard'))
+
+    upload_folder = current_app.config.get('UPLOAD_FOLDER', 'uploads')
+
+    # For preview, serve inline instead of as attachment
+    if material.file_type in ['pdf', 'jpg', 'jpeg', 'png', 'gif']:
+        return send_from_directory(upload_folder, material.filename)
+    else:
+        # For other file types, download instead
+        return send_from_directory(upload_folder, material.filename, as_attachment=True)
+
+@admin.route('/api/charts/enrollment-stats')
+@login_required
+def api_enrollment_stats():
+    if current_user.user_type not in ['admin', 'secretary']:
+        return jsonify({'error': 'Acesso negado'}), 403
+
+    from sqlalchemy import func, extract
+
+    # Matrículas por mês (últimos 12 meses)
+    monthly_enrollments = db.session.query(
+        extract('month', Enrollment.enrollment_date).label('month'),
+        extract('year', Enrollment.enrollment_date).label('year'),
+        func.count(Enrollment.id).label('count')
+    ).filter(
+        Enrollment.enrollment_date >= datetime.now().replace(year=datetime.now().year-1)
+    ).group_by(
+        extract('year', Enrollment.enrollment_date),
+        extract('month', Enrollment.enrollment_date)
+    ).order_by('year', 'month').all()
+
+    # Alunos por curso
+    students_by_course = db.session.query(
+        Course.name,
+        func.count(Enrollment.id).label('students')
+    ).join(
+        Enrollment, Course.id == Enrollment.course_id
+    ).filter(
+        Enrollment.status == 'active'
+    ).group_by(Course.id, Course.name).all()
+
+    # Receita mensal
+    monthly_revenue = db.session.query(
+        extract('month', Payment.payment_date).label('month'),
+        extract('year', Payment.payment_date).label('year'),
+        func.sum(Payment.amount).label('revenue')
+    ).filter(
+        Payment.status == 'paid',
+        Payment.payment_date >= datetime.now().replace(year=datetime.now().year-1)
+    ).group_by(
+        extract('year', Payment.payment_date),
+        extract('month', Payment.payment_date)
+    ).order_by('year', 'month').all()
+
+    return jsonify({
+        'monthly_enrollments': [
+            {'month': f'{int(m.month):02d}/{int(m.year)}', 'count': m.count}
+            for m in monthly_enrollments
+        ],
+        'students_by_course': [
+            {'course': s.name, 'students': s.students}
+            for s in students_by_course
+        ],
+        'monthly_revenue': [
+            {'month': f'{int(r.month):02d}/{int(r.year)}', 'revenue': float(r.revenue or 0)}
+            for r in monthly_revenue
+        ]
+    })
+
+@admin.route('/api/backup', methods=['POST'])
+@login_required
+def create_backup():
+    if current_user.user_type not in ['admin']:
+        return jsonify({'error': 'Acesso negado'}), 403
+
+    try:
+        import sqlite3
+        import shutil
+        import os
+        from datetime import datetime
+
+        # Criar diretório de backup se não existir
+        backup_dir = 'backups'
+        os.makedirs(backup_dir, exist_ok=True)
+
+        # Nome do arquivo de backup
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        backup_filename = f'backup_{timestamp}.db'
+        backup_path = os.path.join(backup_dir, backup_filename)
+
+        # Copiar banco de dados
+        db_path = 'instance/school.db'  # Ajuste conforme necessário
+        if os.path.exists(db_path):
+            shutil.copy2(db_path, backup_path)
+
+            return jsonify({
+                'success': True,
+                'filename': backup_filename,
+                'message': f'Backup criado: {backup_filename}'
+            })
+        else:
+            return jsonify({'error': 'Banco de dados não encontrado'}), 500
+
+    except Exception as e:
+        current_app.logger.error(f'Backup error: {e}')
+        return jsonify({'error': 'Erro ao criar backup'}), 500
+
+
 @admin.route('/generate-monthly-payments', methods=['POST'])
 @login_required
 def generate_monthly_payments():
@@ -1792,197 +1986,3 @@ def export_report(report_type):
         current_app.logger.error(f'Export error: {e}')
         flash('Erro ao exportar relatório.', 'danger')
         return redirect(url_for('admin.reports'))
-
-@admin.route('/api/charts/enrollment-stats')
-@login_required
-def api_enrollment_stats():
-    if current_user.user_type not in ['admin', 'secretary']:
-        return jsonify({'error': 'Acesso negado'}), 403
-
-    from sqlalchemy import func, extract
-
-    # Matrículas por mês (últimos 12 meses)
-    monthly_enrollments = db.session.query(
-        extract('month', Enrollment.enrollment_date).label('month'),
-        extract('year', Enrollment.enrollment_date).label('year'),
-        func.count(Enrollment.id).label('count')
-    ).filter(
-        Enrollment.enrollment_date >= datetime.now().replace(year=datetime.now().year-1)
-    ).group_by(
-        extract('year', Enrollment.enrollment_date),
-        extract('month', Enrollment.enrollment_date)
-    ).order_by('year', 'month').all()
-
-    # Alunos por curso
-    students_by_course = db.session.query(
-        Course.name,
-        func.count(Enrollment.id).label('students')
-    ).join(
-        Enrollment, Course.id == Enrollment.course_id
-    ).filter(
-        Enrollment.status == 'active'
-    ).group_by(Course.id, Course.name).all()
-
-    # Receita mensal
-    monthly_revenue = db.session.query(
-        extract('month', Payment.payment_date).label('month'),
-        extract('year', Payment.payment_date).label('year'),
-        func.sum(Payment.amount).label('revenue')
-    ).filter(
-        Payment.status == 'paid',
-        Payment.payment_date >= datetime.now().replace(year=datetime.now().year-1)
-    ).group_by(
-        extract('year', Payment.payment_date),
-        extract('month', Payment.payment_date)
-    ).order_by('year', 'month').all()
-
-    return jsonify({
-        'monthly_enrollments': [
-            {'month': f'{int(m.month):02d}/{int(m.year)}', 'count': m.count}
-            for m in monthly_enrollments
-        ],
-        'students_by_course': [
-            {'course': s.name, 'students': s.students}
-            for s in students_by_course
-        ],
-        'monthly_revenue': [
-            {'month': f'{int(r.month):02d}/{int(r.year)}', 'revenue': float(r.revenue or 0)}
-            for r in monthly_revenue
-        ]
-    })
-
-@admin.route('/api/backup', methods=['POST'])
-@login_required
-def create_backup():
-    if current_user.user_type not in ['admin']:
-        return jsonify({'error': 'Acesso negado'}), 403
-
-    try:
-        import sqlite3
-        import shutil
-        import os
-        from datetime import datetime
-
-        # Criar diretório de backup se não existir
-        backup_dir = 'backups'
-        os.makedirs(backup_dir, exist_ok=True)
-
-        # Nome do arquivo de backup
-        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-        backup_filename = f'backup_{timestamp}.db'
-        backup_path = os.path.join(backup_dir, backup_filename)
-
-        # Copiar banco de dados
-        db_path = 'instance/school.db'  # Ajuste conforme necessário
-        if os.path.exists(db_path):
-            shutil.copy2(db_path, backup_path)
-
-            return jsonify({
-                'success': True,
-                'filename': backup_filename,
-                'message': f'Backup criado: {backup_filename}'
-            })
-        else:
-            return jsonify({'error': 'Banco de dados não encontrado'}), 500
-
-    except Exception as e:
-        current_app.logger.error(f'Backup error: {e}')
-        return jsonify({'error': 'Erro ao criar backup'}), 500
-
-
-    if current_user.user_type == 'teacher':
-        teacher = Teacher.query.filter_by(user_id=current_user.id).first()
-        if not teacher or course.teacher_id != teacher.id:
-            flash('Você só pode enviar materiais para seus próprios cursos.', 'danger')
-            return redirect(url_for('teacher.teacher_dashboard'))
-
-    title = request.form.get('title')
-    description = request.form.get('description')
-    file = request.files.get('file')
-
-    if not title or not file:
-        flash('Título e arquivo são obrigatórios.', 'danger')
-        return redirect(url_for('admin.course_materials', course_id=course_id))
-
-    if file.filename and not allowed_file(file.filename):
-        flash('Tipo de arquivo não permitido.', 'danger')
-        return redirect(url_for('admin.course_materials', course_id=course_id))
-
-    # Create upload directory if it doesn't exist
-    upload_folder = current_app.config.get('UPLOAD_FOLDER', 'uploads')
-    os.makedirs(upload_folder, exist_ok=True)
-
-    # Save file
-    filename = secure_filename(file.filename or 'unnamed')
-    # Add timestamp to avoid conflicts
-    name, ext = os.path.splitext(filename)
-    filename = f"{name}_{int(datetime.now().timestamp())}{ext}"
-    file_path = os.path.join(upload_folder, filename)
-    file.save(file_path)
-
-    # Get file info
-    file_size = os.path.getsize(file_path)
-    file_type = ext[1:].lower() if ext else None
-
-    # Create material record
-    material = Material()
-    material.title = title
-    material.description = description
-    material.filename = filename
-    material.file_type = file_type
-    material.file_size = file_size
-    material.course_id = course_id
-    material.uploaded_by_id = current_user.id
-    material.uploaded_at = datetime.now()
-
-    db.session.add(material)
-    db.session.commit()
-
-    flash('Material enviado com sucesso!', 'success')
-    return redirect(url_for('admin.course_materials', course_id=course_id))
-
-@admin.route('/material/<int:material_id>/preview')
-@login_required
-def preview_material(material_id):
-    if current_user.user_type not in ['admin', 'secretary', 'teacher', 'student']:
-        flash('Acesso negado.', 'danger')
-        return redirect(url_for('main.index'))
-
-    material = Material.query.get_or_404(material_id)
-
-    # Same access control as download
-    if current_user.user_type == 'student':
-        student = Student.query.filter_by(user_id=current_user.id).first()
-        if not student:
-            flash('Perfil de estudante não encontrado.', 'danger')
-            return redirect(url_for('main.index'))
-
-        enrollment = Enrollment.query.filter_by(
-            student_id=student.id,
-            course_id=material.course_id,
-            status='active'
-        ).first()
-
-        if not enrollment:
-            flash('Você não tem acesso a este material.', 'danger')
-            return redirect(url_for('student.student_dashboard'))
-
-    elif current_user.user_type == 'teacher':
-        teacher = Teacher.query.filter_by(user_id=current_user.id).first()
-        if not teacher:
-            flash('Perfil de professor não encontrado.', 'danger')
-            return redirect(url_for('main.index'))
-
-        course = Course.query.get(material.course_id)
-        if course and course.teacher_id != teacher.id:
-            flash('Você não tem acesso a este material.', 'danger')
-            return redirect(url_for('teacher.teacher_dashboard'))
-
-    upload_folder = current_app.config.get('UPLOAD_FOLDER', 'uploads')
-
-    # For preview, serve inline instead of as attachment
-    if material.file_type in ['pdf', 'jpg', 'jpeg', 'png', 'gif']:
-        return send_from_directory(upload_folder, material.filename)
-    else:
-        # For other file types, download instead
-        return send_from_directory(upload_folder, material.filename, as_attachment=True)
