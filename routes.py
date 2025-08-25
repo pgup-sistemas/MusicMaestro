@@ -1008,14 +1008,12 @@ def course_materials(course_id):
             flash('Você só pode acessar materiais dos seus próprios cursos.', 'danger')
             return redirect(url_for('teacher.teacher_dashboard'))
 
-    # Get course materials with uploader info
-    materials = db.session.query(Material, User).outerjoin(
-        User, Material.uploaded_by_id == User.id
-    ).filter(Material.course_id == course_id).order_by(Material.uploaded_at.desc()).all()
+    # Get course materials
+    materials = Material.query.filter_by(course_id=course_id).order_by(Material.uploaded_at.desc()).all()
 
     return render_template('admin/course_materials.html',
                          course=course,
-                         materials=[m.Material for m, u in materials])
+                         materials=materials)
 
 @admin.route('/teacher/<int:teacher_id>/schedule')
 @login_required
