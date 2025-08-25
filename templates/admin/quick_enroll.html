@@ -1,0 +1,181 @@
+
+{% extends "base.html" %}
+
+{% block title %}Matrícula Rápida - Sol Maior{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pb-2 mb-3 border-bottom">
+                <h1 class="h2">Matrícula Rápida</h1>
+                <div class="btn-toolbar mb-2 mb-md-0">
+                    <div class="btn-group me-2">
+                        <a href="{{ url_for('admin.students') }}" class="btn btn-sm btn-outline-secondary">
+                            <i class="fas fa-users"></i> Ver Alunos
+                        </a>
+                        <a href="{{ url_for('admin.courses') }}" class="btn btn-sm btn-outline-secondary">
+                            <i class="fas fa-graduation-cap"></i> Ver Cursos
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Nova Matrícula</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="student_id" class="form-label">Aluno *</label>
+                                    <select class="form-select" id="student_id" name="student_id" required>
+                                        <option value="">Selecione um aluno</option>
+                                        {% for student, user in students %}
+                                        <option value="{{ student.id }}" data-email="{{ user.email }}" data-phone="{{ user.phone }}">
+                                            {{ user.full_name }}
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="course_id" class="form-label">Curso *</label>
+                                    <select class="form-select" id="course_id" name="course_id" required>
+                                        <option value="">Selecione um curso</option>
+                                        {% for course in courses %}
+                                        <option value="{{ course.id }}" data-price="{{ course.monthly_price }}" data-max="{{ course.max_students }}">
+                                            {{ course.name }} - {{ course.instrument }} ({{ course.level }}) - R$ {{ "%.2f"|format(course.monthly_price) }}
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="enrollment_date" class="form-label">Data da Matrícula *</label>
+                                    <input type="date" class="form-control" id="enrollment_date" name="enrollment_date" 
+                                           value="{{ datetime.now().strftime('%Y-%m-%d') }}" required>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="discount_percentage" class="form-label">Desconto (%)</label>
+                                    <input type="number" class="form-control" id="discount_percentage" name="discount_percentage" 
+                                           min="0" max="100" step="0.01" placeholder="0.00">
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="final_price" class="form-label">Valor Final</label>
+                                    <input type="text" class="form-control" id="final_price" readonly>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="alert alert-info" id="course_info" style="display: none;">
+                                    <strong>Informações do Curso:</strong>
+                                    <div id="course_details"></div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('admin.students') }}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left"></i> Voltar
+                            </a>
+                            <button type="submit" class="btn btn-success">
+                                <i class="fas fa-user-plus"></i> Matricular Aluno
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">Informações do Aluno</h6>
+                </div>
+                <div class="card-body" id="student_info">
+                    <p class="text-muted">Selecione um aluno para ver as informações</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const studentSelect = document.getElementById('student_id');
+    const courseSelect = document.getElementById('course_id');
+    const discountInput = document.getElementById('discount_percentage');
+    const finalPriceInput = document.getElementById('final_price');
+    const studentInfo = document.getElementById('student_info');
+    const courseInfo = document.getElementById('course_info');
+    const courseDetails = document.getElementById('course_details');
+    
+    function updateStudentInfo() {
+        const selectedOption = studentSelect.options[studentSelect.selectedIndex];
+        if (selectedOption.value) {
+            const email = selectedOption.dataset.email;
+            const phone = selectedOption.dataset.phone;
+            studentInfo.innerHTML = `
+                <p><strong>Nome:</strong> ${selectedOption.text}</p>
+                <p><strong>E-mail:</strong> ${email}</p>
+                <p><strong>Telefone:</strong> ${phone}</p>
+            `;
+        } else {
+            studentInfo.innerHTML = '<p class="text-muted">Selecione um aluno para ver as informações</p>';
+        }
+    }
+    
+    function updateCourseInfo() {
+        const selectedOption = courseSelect.options[courseSelect.selectedIndex];
+        if (selectedOption.value) {
+            const price = parseFloat(selectedOption.dataset.price);
+            const maxStudents = selectedOption.dataset.max;
+            courseDetails.innerHTML = `
+                <p><strong>Curso:</strong> ${selectedOption.text}</p>
+                <p><strong>Valor Mensal:</strong> R$ ${price.toFixed(2)}</p>
+                <p><strong>Máximo de Alunos:</strong> ${maxStudents}</p>
+            `;
+            courseInfo.style.display = 'block';
+            updateFinalPrice();
+        } else {
+            courseInfo.style.display = 'none';
+            finalPriceInput.value = '';
+        }
+    }
+    
+    function updateFinalPrice() {
+        const selectedCourse = courseSelect.options[courseSelect.selectedIndex];
+        if (selectedCourse.value) {
+            const price = parseFloat(selectedCourse.dataset.price);
+            const discount = parseFloat(discountInput.value) || 0;
+            const finalPrice = price * (1 - discount / 100);
+            finalPriceInput.value = `R$ ${finalPrice.toFixed(2)}`;
+        }
+    }
+    
+    studentSelect.addEventListener('change', updateStudentInfo);
+    courseSelect.addEventListener('change', updateCourseInfo);
+    discountInput.addEventListener('input', updateFinalPrice);
+});
+</script>
+{% endblock %}

@@ -1,0 +1,203 @@
+
+{% extends "base.html" %}
+
+{% block title %}Resumo Financeiro - Sol Maior{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pb-2 mb-3 border-bottom">
+                <h1 class="h2">Resumo Financeiro</h1>
+                <div class="btn-toolbar mb-2 mb-md-0">
+                    <div class="btn-group me-2">
+                        <a href="{{ url_for('admin.reports') }}" class="btn btn-sm btn-outline-secondary">
+                            <i class="fas fa-arrow-left"></i> Voltar aos Relatórios
+                        </a>
+                        <button class="btn btn-sm btn-outline-secondary" onclick="window.print()">
+                            <i class="fas fa-print"></i> Imprimir
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Inadimplência -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-exclamation-triangle"></i> 
+                        Inadimplência - Total: R$ {{ "%.2f"|format(overdue_amount) }}
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if overdue_payments %}
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Aluno</th>
+                                    <th>Valor</th>
+                                    <th>Vencimento</th>
+                                    <th>Dias em Atraso</th>
+                                    <th>Mês Referência</th>
+                                    <th>Ação</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for payment, student, user in overdue_payments %}
+                                {% set days_overdue = (today - payment.due_date).days %}
+                                <tr class="{% if days_overdue > 30 %}table-danger{% elif days_overdue > 15 %}table-warning{% endif %}">
+                                    <td>{{ user.full_name }}</td>
+                                    <td>R$ {{ "%.2f"|format(payment.amount) }}</td>
+                                    <td>{{ payment.due_date.strftime('%d/%m/%Y') }}</td>
+                                    <td>
+                                        <span class="badge {% if days_overdue > 30 %}bg-danger{% elif days_overdue > 15 %}bg-warning{% else %}bg-secondary{% endif %}">
+                                            {{ days_overdue }} dias
+                                        </span>
+                                    </td>
+                                    <td>{{ payment.reference_month }}</td>
+                                    <td>
+                                        <a href="mailto:{{ user.email }}?subject=Pagamento%20em%20Atraso&body=Olá%20{{ user.full_name }},%20seu%20pagamento%20está%20em%20atraso." 
+                                           class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-envelope"></i> Contatar
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p class="text-success mb-0">Não há pagamentos em atraso no momento.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Receita Mensal -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-chart-line"></i> 
+                        Receita Mensal (Últimos 12 Meses)
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if monthly_revenue %}
+                    <canvas id="revenueChart" width="400" height="200"></canvas>
+                    <div class="table-responsive mt-3">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Mês/Ano</th>
+                                    <th>Receita</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for revenue in monthly_revenue %}
+                                <tr>
+                                    <td>{{ "%02d"|format(revenue.month) }}/{{ revenue.year }}</td>
+                                    <td>R$ {{ "%.2f"|format(revenue.total) }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p class="text-muted mb-0">Nenhum dado de receita disponível.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-coins"></i> 
+                        Receita por Curso
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if course_revenue %}
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Curso</th>
+                                    <th>Receita Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for course_name, total_revenue in course_revenue %}
+                                <tr>
+                                    <td>{{ course_name }}</td>
+                                    <td>R$ {{ "%.2f"|format(total_revenue) }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p class="text-muted mb-0">Nenhum dado de receita por curso disponível.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+{% if monthly_revenue %}
+// Preparar dados do gráfico
+const labels = [{% for revenue in monthly_revenue %}'{{ "%02d"|format(revenue.month) }}/{{ revenue.year }}'{% if not loop.last %}, {% endif %}{% endfor %}];
+const data = [{% for revenue in monthly_revenue %}{{ revenue.total }}{% if not loop.last %}, {% endif %}{% endfor %}];
+
+// Criar gráfico
+const ctx = document.getElementById('revenueChart').getContext('2d');
+const revenueChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+        labels: labels,
+        datasets: [{
+            label: 'Receita Mensal (R$)',
+            data: data,
+            borderColor: 'rgb(75, 192, 192)',
+            backgroundColor: 'rgba(75, 192, 192, 0.1)',
+            tension: 0.1
+        }]
+    },
+    options: {
+        responsive: true,
+        scales: {
+            y: {
+                beginAtZero: true,
+                ticks: {
+                    callback: function(value) {
+                        return 'R$ ' + value.toFixed(2);
+                    }
+                }
+            }
+        },
+        plugins: {
+            tooltip: {
+                callbacks: {
+                    label: function(context) {
+                        return 'Receita: R$ ' + context.parsed.y.toFixed(2);
+                    }
+                }
+            }
+        }
+    }
+});
+{% endif %}
+</script>
+{% endblock %}

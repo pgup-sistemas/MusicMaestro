@@ -997,6 +997,7 @@ def enroll_student(course_id):
     course = Course.query.get_or_404(course_id)
     student_id = request.form.get('student_id')
     enrollment_date = request.form.get('enrollment_date')
+    discount_percentage = request.form.get('discount_percentage', 0)
     
     if not student_id or not enrollment_date:
         flash('Dados incompletos.', 'danger')
@@ -1023,18 +1024,222 @@ def enroll_student(course_id):
         flash('Curso já atingiu a capacidade máxima.', 'warning')
         return redirect(url_for('admin.course_students', course_id=course_id))
     
+    # Calculate monthly payment with discount
+    monthly_payment = course.monthly_price
+    if discount_percentage and float(discount_percentage) > 0:
+        discount = float(discount_percentage) / 100
+        monthly_payment = course.monthly_price * (1 - discount)
+    
     # Create enrollment
     enrollment = Enrollment()
     enrollment.student_id = student_id
     enrollment.course_id = course_id
     enrollment.enrollment_date = datetime.strptime(enrollment_date, '%Y-%m-%d').date()
     enrollment.status = 'active'
+    enrollment.discount_percentage = discount_percentage
+    enrollment.monthly_payment = monthly_payment
     
     db.session.add(enrollment)
     db.session.commit()
     
     flash('Aluno matriculado com sucesso!', 'success')
     return redirect(url_for('admin.course_students', course_id=course_id))
+
+@admin.route('/quick-enroll', methods=['GET', 'POST'])
+@login_required
+def quick_enroll():
+    if current_user.user_type not in ['admin', 'secretary']:
+        flash('Acesso negado.', 'danger')
+        return redirect(url_for('main.index'))
+    
+    if request.method == 'POST':
+        student_id = request.form.get('student_id')
+        course_id = request.form.get('course_id')
+        enrollment_date = request.form.get('enrollment_date')
+        discount_percentage = request.form.get('discount_percentage', 0)
+        
+        if not student_id or not course_id or not enrollment_date:
+            flash('Todos os campos são obrigatórios.', 'danger')
+            return redirect(url_for('admin.quick_enroll'))
+        
+        # Verify student and course exist
+        student = Student.query.get(student_id)
+        course = Course.query.get(course_id)
+        
+        if not student or not course:
+            flash('Aluno ou curso não encontrado.', 'danger')
+            return redirect(url_for('admin.quick_enroll'))
+        
+        # Check if already enrolled
+        existing = Enrollment.query.filter_by(
+            student_id=student_id,
+            course_id=course_id,
+            status='active'
+        ).first()
+        
+        if existing:
+            flash('Aluno já está matriculado neste curso.', 'warning')
+            return redirect(url_for('admin.quick_enroll'))
+        
+        # Check course capacity
+        active_enrollments = Enrollment.query.filter_by(
+            course_id=course_id,
+            status='active'
+        ).count()
+        
+        if active_enrollments >= course.max_students:
+            flash('Curso já atingiu a capacidade máxima.', 'warning')
+            return redirect(url_for('admin.quick_enroll'))
+        
+        # Calculate monthly payment with discount
+        monthly_payment = course.monthly_price
+        if discount_percentage and float(discount_percentage) > 0:
+            discount = float(discount_percentage) / 100
+            monthly_payment = course.monthly_price * (1 - discount)
+        
+        # Create enrollment
+        enrollment = Enrollment()
+        enrollment.student_id = student_id
+        enrollment.course_id = course_id
+        enrollment.enrollment_date = datetime.strptime(enrollment_date, '%Y-%m-%d').date()
+        enrollment.status = 'active'
+        enrollment.discount_percentage = discount_percentage
+        enrollment.monthly_payment = monthly_payment
+        
+        db.session.add(enrollment)
+        db.session.commit()
+        
+        flash('Matrícula realizada com sucesso!', 'success')
+        return redirect(url_for('admin.view_student', student_id=student_id))
+    
+    # GET request - show form
+    students = db.session.query(Student, User).join(User, Student.user_id == User.id).filter(User.is_active == True).all()
+    courses = Course.query.filter_by(is_active=True).all()
+    
+    return render_template('admin/quick_enroll.html', students=students, courses=courses)
+
+@admin.route('/reports')
+@login_required
+def reports():
+    if current_user.user_type not in ['admin', 'secretary']:
+        flash('Acesso negado.', 'danger')
+        return redirect(url_for('main.index'))
+    
+    # Estatísticas gerais
+    total_students = Student.query.count()
+    active_students = db.session.query(Student).join(User).filter(User.is_active == True).count()
+    inactive_students = total_students - active_students
+    
+    total_courses = Course.query.filter_by(is_active=True).count()
+    total_teachers = Teacher.query.count()
+    
+    # Alunos sem matrícula ativa
+    students_without_enrollment = db.session.query(Student, User).join(
+        User, Student.user_id == User.id
+    ).outerjoin(
+        Enrollment, and_(Enrollment.student_id == Student.id, Enrollment.status == 'active')
+    ).filter(
+        Enrollment.id == None,
+        User.is_active == True
+    ).all()
+    
+    # Cursos sem professor
+    courses_without_teacher = Course.query.filter(
+        Course.teacher_id == None,
+        Course.is_active == True
+    ).all()
+    
+    # Pagamentos pendentes
+    pending_payments = db.session.query(Payment, Student, User).join(
+        Student, Payment.student_id == Student.id
+    ).join(
+        User, Student.user_id == User.id
+    ).filter(Payment.status == 'pending').all()
+    
+    # Receita mensal
+    from sqlalchemy import func, extract
+    current_month_revenue = db.session.query(func.sum(Payment.amount)).filter(
+        Payment.status == 'paid',
+        extract('month', Payment.payment_date) == datetime.now().month,
+        extract('year', Payment.payment_date) == datetime.now().year
+    ).scalar() or 0
+    
+    # Matrículas por curso
+    enrollment_stats = db.session.query(
+        Course.name,
+        func.count(Enrollment.id).label('total_enrollments')
+    ).join(
+        Enrollment, Course.id == Enrollment.course_id
+    ).filter(
+        Enrollment.status == 'active'
+    ).group_by(Course.id, Course.name).all()
+    
+    return render_template('admin/reports.html',
+                         total_students=total_students,
+                         active_students=active_students,
+                         inactive_students=inactive_students,
+                         total_courses=total_courses,
+                         total_teachers=total_teachers,
+                         students_without_enrollment=students_without_enrollment,
+                         courses_without_teacher=courses_without_teacher,
+                         pending_payments=pending_payments,
+                         current_month_revenue=current_month_revenue,
+                         enrollment_stats=enrollment_stats)
+
+@admin.route('/financial-summary')
+@login_required
+def financial_summary():
+    if current_user.user_type not in ['admin', 'secretary']:
+        flash('Acesso negado.', 'danger')
+        return redirect(url_for('main.index'))
+    
+    from sqlalchemy import func, extract
+    
+    # Receita por mês (últimos 12 meses)
+    monthly_revenue = db.session.query(
+        extract('year', Payment.payment_date).label('year'),
+        extract('month', Payment.payment_date).label('month'),
+        func.sum(Payment.amount).label('total')
+    ).filter(
+        Payment.status == 'paid',
+        Payment.payment_date >= datetime.now().replace(year=datetime.now().year-1)
+    ).group_by(
+        extract('year', Payment.payment_date),
+        extract('month', Payment.payment_date)
+    ).order_by('year', 'month').all()
+    
+    # Inadimplência
+    overdue_payments = db.session.query(Payment, Student, User).join(
+        Student, Payment.student_id == Student.id
+    ).join(
+        User, Student.user_id == User.id
+    ).filter(
+        Payment.status == 'pending',
+        Payment.due_date < datetime.now().date()
+    ).all()
+    
+    overdue_amount = db.session.query(func.sum(Payment.amount)).filter(
+        Payment.status == 'pending',
+        Payment.due_date < datetime.now().date()
+    ).scalar() or 0
+    
+    # Receita por curso
+    course_revenue = db.session.query(
+        Course.name,
+        func.sum(Payment.amount).label('total_revenue')
+    ).join(
+        Enrollment, Course.id == Enrollment.course_id
+    ).join(
+        Payment, Enrollment.student_id == Payment.student_id
+    ).filter(
+        Payment.status == 'paid'
+    ).group_by(Course.id, Course.name).all()
+    
+    return render_template('admin/financial_summary.html',
+                         monthly_revenue=monthly_revenue,
+                         overdue_payments=overdue_payments,
+                         overdue_amount=overdue_amount,
+                         course_revenue=course_revenue)
 
 @admin.route('/material/<int:material_id>/download')
 @login_required

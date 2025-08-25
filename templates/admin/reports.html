@@ -1,0 +1,290 @@
+
+{% extends "base.html" %}
+
+{% block title %}Relatórios - Sol Maior{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pb-2 mb-3 border-bottom">
+                <h1 class="h2">Relatórios Gerenciais</h1>
+                <div class="btn-toolbar mb-2 mb-md-0">
+                    <div class="btn-group me-2">
+                        <a href="{{ url_for('admin.financial_summary') }}" class="btn btn-sm btn-outline-primary">
+                            <i class="fas fa-chart-line"></i> Resumo Financeiro
+                        </a>
+                        <button class="btn btn-sm btn-outline-secondary" onclick="window.print()">
+                            <i class="fas fa-print"></i> Imprimir
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Estatísticas Gerais -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4>{{ total_students }}</h4>
+                            <p class="mb-0">Total de Alunos</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-users fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4>{{ active_students }}</h4>
+                            <p class="mb-0">Alunos Ativos</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-user-check fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4>{{ total_courses }}</h4>
+                            <p class="mb-0">Cursos Ativos</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-graduation-cap fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4>R$ {{ "%.2f"|format(current_month_revenue) }}</h4>
+                            <p class="mb-0">Receita do Mês</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-dollar-sign fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Problemas Identificados -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-exclamation-triangle"></i> 
+                        Alunos Sem Matrícula Ativa ({{ students_without_enrollment|length }})
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if students_without_enrollment %}
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Nome</th>
+                                    <th>E-mail</th>
+                                    <th>Ação</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for student, user in students_without_enrollment %}
+                                <tr>
+                                    <td>{{ user.full_name }}</td>
+                                    <td>{{ user.email }}</td>
+                                    <td>
+                                        <a href="{{ url_for('admin.quick_enroll') }}?student_id={{ student.id }}" 
+                                           class="btn btn-sm btn-primary">
+                                            <i class="fas fa-user-plus"></i> Matricular
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p class="text-success mb-0">Todos os alunos ativos estão matriculados em pelo menos um curso.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0">
+                        <i class="fas fa-user-slash"></i> 
+                        Cursos Sem Professor ({{ courses_without_teacher|length }})
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if courses_without_teacher %}
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Curso</th>
+                                    <th>Instrumento</th>
+                                    <th>Ação</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for course in courses_without_teacher %}
+                                <tr>
+                                    <td>{{ course.name }}</td>
+                                    <td>{{ course.instrument }}</td>
+                                    <td>
+                                        <a href="{{ url_for('admin.edit_course', course_id=course.id) }}" 
+                                           class="btn btn-sm btn-warning">
+                                            <i class="fas fa-edit"></i> Atribuir
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p class="text-success mb-0">Todos os cursos têm professores atribuídos.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pagamentos Pendentes -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-clock"></i> 
+                        Pagamentos Pendentes ({{ pending_payments|length }})
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if pending_payments %}
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Aluno</th>
+                                    <th>Valor</th>
+                                    <th>Vencimento</th>
+                                    <th>Mês Referência</th>
+                                    <th>Status</th>
+                                    <th>Ação</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for payment, student, user in pending_payments %}
+                                <tr{% if payment.due_date < today %} class="table-danger"{% endif %}>
+                                    <td>{{ user.full_name }}</td>
+                                    <td>R$ {{ "%.2f"|format(payment.amount) }}</td>
+                                    <td>{{ payment.due_date.strftime('%d/%m/%Y') }}</td>
+                                    <td>{{ payment.reference_month }}</td>
+                                    <td>
+                                        {% if payment.due_date < today %}
+                                        <span class="badge bg-danger">Vencido</span>
+                                        {% else %}
+                                        <span class="badge bg-warning">Pendente</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <a href="{{ url_for('admin.view_payment', payment_id=payment.id) }}" 
+                                           class="btn btn-sm btn-outline-info">
+                                            <i class="fas fa-eye"></i> Ver
+                                        </a>
+                                        <a href="{{ url_for('admin.mark_payment_paid', payment_id=payment.id) }}" 
+                                           class="btn btn-sm btn-success">
+                                            <i class="fas fa-check"></i> Pago
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p class="text-success mb-0">Não há pagamentos pendentes no momento.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Estatísticas de Matrícula por Curso -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-chart-bar"></i> 
+                        Matrículas por Curso
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if enrollment_stats %}
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Curso</th>
+                                    <th>Total de Matrículas</th>
+                                    <th>Visualização</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for course_name, total_enrollments in enrollment_stats %}
+                                <tr>
+                                    <td>{{ course_name }}</td>
+                                    <td>{{ total_enrollments }}</td>
+                                    <td>
+                                        <div class="progress" style="height: 20px;">
+                                            <div class="progress-bar" role="progressbar" 
+                                                 style="width: {{ (total_enrollments / 20 * 100)|min(100) }}%">
+                                                {{ total_enrollments }}
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p class="text-muted mb-0">Nenhuma matrícula ativa encontrada.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Adicionar hoje para comparações
+const today = new Date().toISOString().split('T')[0];
+</script>
+{% endblock %}
