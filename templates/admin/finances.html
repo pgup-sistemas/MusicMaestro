@@ -114,6 +114,7 @@ function confirmGeneratePayments() {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token() }}'
         },
         body: JSON.stringify({ month: parseInt(month), year: parseInt(year) })
     })
@@ -152,7 +153,10 @@ function confirmGeneratePayments() {
 
 function sendPaymentReminders() {
     fetch('/admin/send-payment-reminders', {
-        method: 'POST'
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': '{{ csrf_token() }}'
+        }
     })
     .then(response => response.json())
     .then(data => {

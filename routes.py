@@ -5,7 +5,7 @@ from flask_login import login_user, logout_user, login_required, current_user
 from werkzeug.security import check_password_hash, generate_password_hash
 from werkzeug.utils import secure_filename
 from sqlalchemy import and_
-from app import db
+from app import db, csrf
 from models import User, Student, Teacher, Room, Course, Enrollment, Schedule, Payment, Material, ExperimentalClass
 from forms import *
 from utils import send_email, allowed_file
@@ -920,6 +920,7 @@ def payment_webhook():
 
 @admin.route('/send-payment-reminders', methods=['POST'])
 @login_required
+@csrf.exempt
 def send_payment_reminders():
     if current_user.user_type not in ['admin', 'secretary']:
         return jsonify({'error': 'Acesso negado'}), 403
@@ -1339,7 +1340,8 @@ def reports():
                          lost_revenue=lost_revenue,
                          enrollment_stats=enrollment_stats,
                          growth_data=growth_data,
-                         top_defaulters=top_defaulters)
+                         top_defaulters=top_defaulters,
+                         today=datetime.now().date())
 
 @admin.route('/financial-summary')
 @login_required
@@ -1473,6 +1475,7 @@ def upload_material(course_id):
 
 @admin.route('/generate-monthly-payments', methods=['POST'])
 @login_required
+@csrf.exempt
 def generate_monthly_payments():
     if current_user.user_type not in ['admin', 'secretary']:
         return jsonify({'error': 'Acesso negado'}), 403

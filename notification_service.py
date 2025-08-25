@@ -1,9 +1,9 @@
 
-from datetime import datetime, date, timedelta
-from flask import current_app
-from models import Payment, Student, User, db
-from utils import send_email
 import logging
+from datetime import date, timedelta
+from app import db
+from models import Payment, Student, User
+from utils import send_email
 
 class NotificationService:
     @staticmethod
@@ -28,12 +28,22 @@ class NotificationService:
             
         try:
             send_email(
-                to=user.email,
                 subject=subject,
-                template=template,
-                payment=payment,
-                student=student,
-                user=user
+                body=f'''
+                Olá {user.full_name},
+
+                {'Seu pagamento vence em 3 dias.' if reminder_type == 'warning' else 'Seu pagamento está em atraso.'}
+                
+                Valor: R$ {payment.amount:.2f}
+                Vencimento: {payment.due_date.strftime('%d/%m/%Y')}
+                Referência: {payment.reference_month.strftime('%m/%Y')}
+                
+                Por favor, regularize sua situação o mais breve possível.
+                
+                Atenciosamente,
+                Escola Sol Maior
+                ''',
+                recipients=[user.email]
             )
             
             # Log da notificação
@@ -92,14 +102,25 @@ class NotificationService:
         
         try:
             send_email(
-                to=user.email,
-                subject=f'Confirmação de Matrícula - {course.name}',
-                template='email/enrollment_confirmation.html',
-                enrollment=enrollment,
-                student=student,
-                user=user,
-                course=course
+                subject=f'Confirmação de Matrícula - Escola Sol Maior',
+                body=f'''
+                Olá {user.full_name},
+
+                Sua matrícula foi confirmada!
+                
+                Curso: {course.name}
+                Data da Matrícula: {enrollment.enrollment_date.strftime('%d/%m/%Y')}
+                Mensalidade: R$ {enrollment.monthly_payment:.2f}
+                
+                Seja bem-vindo(a) à Escola Sol Maior!
+                
+                Atenciosamente,
+                Equipe Sol Maior
+                ''',
+                recipients=[user.email]
             )
+            
+            logging.info(f'Confirmação de matrícula enviada para {user.email}')
             return True
             
         except Exception as e:
