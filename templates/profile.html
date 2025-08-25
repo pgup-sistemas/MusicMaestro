@@ -1,0 +1,146 @@
+
+{% extends "base.html" %}
+
+{% block title %}Meu Perfil - Escola Sol Maior{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h3 mb-0">
+                    <i class="fas fa-user me-2"></i>Meu Perfil
+                </h1>
+                <a href="{{ url_for('main.edit_profile') }}" class="btn btn-primary">
+                    <i class="fas fa-edit me-2"></i>Editar Perfil
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-id-card me-2"></i>Informações Pessoais
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label text-muted">Nome Completo</label>
+                            <p class="form-control-plaintext">{{ user.full_name }}</p>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label text-muted">E-mail</label>
+                            <p class="form-control-plaintext">{{ user.email }}</p>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label text-muted">Telefone</label>
+                            <p class="form-control-plaintext">{{ user.phone or 'Não informado' }}</p>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label text-muted">Tipo de Usuário</label>
+                            <p class="form-control-plaintext">
+                                {% if user.user_type == 'admin' %}
+                                    <span class="badge bg-danger">Administrador</span>
+                                {% elif user.user_type == 'secretary' %}
+                                    <span class="badge bg-warning">Secretário</span>
+                                {% elif user.user_type == 'teacher' %}
+                                    <span class="badge bg-info">Professor</span>
+                                {% elif user.user_type == 'student' %}
+                                    <span class="badge bg-success">Aluno</span>
+                                {% endif %}
+                            </p>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label text-muted">Status da Conta</label>
+                            <p class="form-control-plaintext">
+                                {% if user.is_active %}
+                                    <span class="badge bg-success">Ativa</span>
+                                {% else %}
+                                    <span class="badge bg-danger">Inativa</span>
+                                {% endif %}
+                            </p>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label text-muted">Membro desde</label>
+                            <p class="form-control-plaintext">{{ user.created_at.strftime('%d/%m/%Y') }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="fas fa-shield-alt me-2"></i>Segurança
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <p class="small text-muted">
+                        Para alterar sua senha, use o botão "Editar Perfil".
+                    </p>
+                    <p class="small text-muted">
+                        <strong>Dica:</strong> Use senhas fortes com pelo menos 8 caracteres, incluindo números e letras maiúsculas e minúsculas.
+                    </p>
+                </div>
+            </div>
+
+            {% if user.user_type == 'student' and user.student_profile %}
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="fas fa-graduation-cap me-2"></i>Informações do Aluno
+                    </h6>
+                </div>
+                <div class="card-body">
+                    {% if user.student_profile.birth_date %}
+                    <p class="small">
+                        <strong>Data de Nascimento:</strong><br>
+                        {{ user.student_profile.birth_date.strftime('%d/%m/%Y') }}
+                    </p>
+                    {% endif %}
+                    {% if user.student_profile.emergency_contact %}
+                    <p class="small">
+                        <strong>Contato de Emergência:</strong><br>
+                        {{ user.student_profile.emergency_contact }}
+                        {% if user.student_profile.emergency_phone %}
+                        <br>{{ user.student_profile.emergency_phone }}
+                        {% endif %}
+                    </p>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+            {% if user.user_type == 'teacher' and user.teacher_profile %}
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="fas fa-chalkboard-teacher me-2"></i>Informações do Professor
+                    </h6>
+                </div>
+                <div class="card-body">
+                    {% if user.teacher_profile.specialization %}
+                    <p class="small">
+                        <strong>Especialização:</strong><br>
+                        {{ user.teacher_profile.specialization }}
+                    </p>
+                    {% endif %}
+                    {% if user.teacher_profile.hourly_rate %}
+                    <p class="small">
+                        <strong>Valor Hora/Aula:</strong><br>
+                        R$ {{ "%.2f"|format(user.teacher_profile.hourly_rate) }}
+                    </p>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

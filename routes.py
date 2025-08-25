@@ -1041,6 +1041,46 @@ def teacher_schedule(teacher_id):
                          user=user,
                          schedules=schedules)
 
+# Profile routes
+@main.route('/profile')
+@login_required
+def profile():
+    return render_template('profile.html', user=current_user)
+
+@main.route('/profile/edit', methods=['GET', 'POST'])
+@login_required
+def edit_profile():
+    form = EditProfileForm()
+    
+    # Pre-populate form with current user data
+    if request.method == 'GET':
+        form.full_name.data = current_user.full_name
+        form.email.data = current_user.email
+        form.phone.data = current_user.phone
+    
+    if form.validate_on_submit():
+        # Check if email is already taken by another user
+        if form.email.data != current_user.email:
+            existing_user = User.query.filter_by(email=form.email.data).first()
+            if existing_user:
+                flash('Este e-mail já está em uso por outro usuário.', 'danger')
+                return render_template('edit_profile.html', form=form)
+        
+        # Update user data
+        current_user.full_name = form.full_name.data
+        current_user.email = form.email.data
+        current_user.phone = form.phone.data
+        
+        # Update password if provided
+        if form.password.data:
+            current_user.password_hash = generate_password_hash(form.password.data)
+        
+        db.session.commit()
+        flash('Perfil atualizado com sucesso!', 'success')
+        return redirect(url_for('main.profile'))
+    
+    return render_template('edit_profile.html', form=form)
+
 # API Routes for AJAX calls
 @admin.route('/api/available-students/<int:course_id>')
 @login_required
@@ -1213,7 +1253,7 @@ def quick_enroll():
     students = db.session.query(Student, User).join(User, Student.user_id == User.id).filter(User.is_active == True).all()
     courses = Course.query.filter_by(is_active=True).all()
 
-    return render_template('admin/quick_enroll.html', students=students, courses=courses)
+    return render_template('admin/quick_enroll.html', students=students, courses=courses, datetime=datetime)
 
 @admin.route('/reports')
 @login_required
