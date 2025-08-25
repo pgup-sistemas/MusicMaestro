@@ -33,9 +33,9 @@ def index():
         if current_user.user_type == 'admin':
             return redirect(url_for('admin.dashboard'))
         elif current_user.user_type == 'student':
-            return redirect(url_for('student.dashboard'))
+            return redirect(url_for('student.student_dashboard'))
         elif current_user.user_type == 'teacher':
-            return redirect(url_for('teacher.dashboard'))
+            return redirect(url_for('teacher.teacher_dashboard'))
         else:
             return redirect(url_for('admin.dashboard'))
     return redirect(url_for('public.landing'))
@@ -49,7 +49,7 @@ def login():
     form = LoginForm()
     if form.validate_on_submit():
         user = User.query.filter_by(email=form.email.data).first()
-        if user and user.is_active and check_password_hash(user.password_hash, form.password.data):
+        if user and user.is_active and form.password.data and check_password_hash(user.password_hash, form.password.data):
             login_user(user)
             next_page = request.args.get('next')
             if not next_page or not next_page.startswith('/'):
@@ -78,7 +78,7 @@ def register():
         user = User(
             username=form.username.data,
             email=form.email.data,
-            password_hash=generate_password_hash(form.password.data),
+            password_hash=generate_password_hash(form.password.data or '123456'),
             user_type=form.user_type.data,
             full_name=form.full_name.data,
             phone=form.phone.data
@@ -282,7 +282,7 @@ def add_course():
     form = CourseForm()
     # Populate teacher choices
     teachers = db.session.query(Teacher, User).join(User).all()
-    form.teacher_id.choices = [(0, 'Selecione um professor')] + [(t.Teacher.id, t.User.full_name) for t in teachers]
+    form.teacher_id.choices = [('0', 'Selecione um professor')] + [(str(t.Teacher.id), t.User.full_name) for t in teachers]
     
     if form.validate_on_submit():
         course = Course(
@@ -293,7 +293,7 @@ def add_course():
             duration_months=form.duration_months.data,
             monthly_price=form.monthly_price.data,
             max_students=form.max_students.data,
-            teacher_id=form.teacher_id.data if form.teacher_id.data != 0 else None,
+            teacher_id=int(form.teacher_id.data) if form.teacher_id.data != '0' else None,
             is_active=form.is_active.data
         )
         db.session.add(course)
@@ -327,7 +327,7 @@ def finances():
 # Student routes
 @student_bp.route('/dashboard')
 @login_required
-def dashboard():
+def student_dashboard():
     if current_user.user_type != 'student':
         flash('Acesso negado.', 'danger')
         return redirect(url_for('main.index'))
@@ -369,7 +369,7 @@ def materials():
 # Teacher routes
 @teacher_bp.route('/dashboard')
 @login_required
-def dashboard():
+def teacher_dashboard():
     if current_user.user_type != 'teacher':
         flash('Acesso negado.', 'danger')
         return redirect(url_for('main.index'))

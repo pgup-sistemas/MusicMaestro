@@ -13,8 +13,19 @@ class User(UserMixin, db.Model):
     user_type = db.Column(db.String(20), nullable=False)  # admin, secretary, teacher, student
     full_name = db.Column(db.String(200), nullable=False)
     phone = db.Column(db.String(20))
-    is_active = db.Column(db.Boolean, default=True)
+    _is_active = db.Column('is_active', db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    def __init__(self, **kwargs):
+        super(User, self).__init__(**kwargs)
+    
+    @property
+    def is_active(self):
+        return self._is_active
+    
+    @is_active.setter
+    def is_active(self, value):
+        self._is_active = value
     
     # Relationships
     student_profile = db.relationship('Student', backref='user', uselist=False, cascade='all, delete-orphan')
@@ -36,6 +47,9 @@ class Student(db.Model):
     notes = db.Column(db.Text)
     registration_date = db.Column(db.Date, default=date.today)
     
+    def __init__(self, **kwargs):
+        super(Student, self).__init__(**kwargs)
+    
     # Relationships
     enrollments = db.relationship('Enrollment', backref='student', cascade='all, delete-orphan')
     payments = db.relationship('Payment', backref='student', cascade='all, delete-orphan')
@@ -56,6 +70,9 @@ class Teacher(db.Model):
     qualifications = db.Column(db.Text)
     hire_date = db.Column(db.Date, default=date.today)
     
+    def __init__(self, **kwargs):
+        super(Teacher, self).__init__(**kwargs)
+    
     # Relationships
     courses = db.relationship('Course', backref='teacher')
     schedules = db.relationship('Schedule', backref='teacher')
@@ -70,6 +87,9 @@ class Room(db.Model):
     location = db.Column(db.String(200))
     is_available = db.Column(db.Boolean, default=True)
     notes = db.Column(db.Text)
+    
+    def __init__(self, **kwargs):
+        super(Room, self).__init__(**kwargs)
     
     # Relationships
     schedules = db.relationship('Schedule', backref='room')
@@ -87,6 +107,9 @@ class Course(db.Model):
     max_students = db.Column(db.Integer, default=1)
     teacher_id = db.Column(db.Integer, db.ForeignKey('teachers.id'))
     is_active = db.Column(db.Boolean, default=True)
+    
+    def __init__(self, **kwargs):
+        super(Course, self).__init__(**kwargs)
     
     # Relationships
     enrollments = db.relationship('Enrollment', backref='course', cascade='all, delete-orphan')
@@ -162,3 +185,6 @@ class ExperimentalClass(db.Model):
     room_id = db.Column(db.Integer, db.ForeignKey('rooms.id'))
     notes = db.Column(db.Text)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    def __init__(self, **kwargs):
+        super(ExperimentalClass, self).__init__(**kwargs)

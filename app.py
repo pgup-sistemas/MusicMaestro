@@ -68,6 +68,10 @@ def create_app():
     from routes import register_blueprints
     register_blueprints(app)
     
+    # Register template filters
+    from utils import register_template_filters
+    register_template_filters(app)
+    
     with app.app_context():
         from models import User, Student, Teacher, Room, Course, Enrollment, Schedule, Payment, Material, ExperimentalClass
         db.create_all()
