@@ -119,7 +119,7 @@ def students():
         flash('Acesso negado.', 'danger')
         return redirect(url_for('main.index'))
     
-    students = db.session.query(Student, User).join(User).all()
+    students = db.session.query(Student, User).join(User, Student.user_id == User.id).all()
     return render_template('admin/students.html', students=students)
 
 @admin.route('/student/add', methods=['GET', 'POST'])
@@ -177,7 +177,7 @@ def teachers():
         flash('Acesso negado.', 'danger')
         return redirect(url_for('main.index'))
     
-    teachers = db.session.query(Teacher, User).join(User).all()
+    teachers = db.session.query(Teacher, User).join(User, Teacher.user_id == User.id).all()
     return render_template('admin/teachers.html', teachers=teachers)
 
 @admin.route('/teacher/add', methods=['GET', 'POST'])
@@ -269,7 +269,7 @@ def courses():
         flash('Acesso negado.', 'danger')
         return redirect(url_for('main.index'))
     
-    courses = db.session.query(Course, Teacher, User).outerjoin(Teacher).outerjoin(User).all()
+    courses = db.session.query(Course, Teacher, User).outerjoin(Teacher, Course.teacher_id == Teacher.id).outerjoin(User, Teacher.user_id == User.id).all()
     return render_template('admin/courses.html', courses=courses)
 
 @admin.route('/course/add', methods=['GET', 'POST'])
@@ -281,7 +281,7 @@ def add_course():
     
     form = CourseForm()
     # Populate teacher choices
-    teachers = db.session.query(Teacher, User).join(User).all()
+    teachers = db.session.query(Teacher, User).join(User, Teacher.user_id == User.id).all()
     form.teacher_id.choices = [('0', 'Selecione um professor')] + [(str(t.Teacher.id), t.User.full_name) for t in teachers]
     
     if form.validate_on_submit():
@@ -311,7 +311,7 @@ def schedule():
         flash('Acesso negado.', 'danger')
         return redirect(url_for('main.index'))
     
-    schedules = db.session.query(Schedule, Course, Teacher, User, Room).join(Course).join(Teacher).join(User).join(Room).all()
+    schedules = db.session.query(Schedule, Course, Teacher, User, Room).join(Course, Schedule.course_id == Course.id).join(Teacher, Schedule.teacher_id == Teacher.id).join(User, Teacher.user_id == User.id).join(Room, Schedule.room_id == Room.id).all()
     return render_template('admin/schedule.html', schedules=schedules)
 
 @admin.route('/finances')
@@ -321,7 +321,7 @@ def finances():
         flash('Acesso negado.', 'danger')
         return redirect(url_for('main.index'))
     
-    payments = db.session.query(Payment, Student, User).join(Student).join(User).all()
+    payments = db.session.query(Payment, Student, User).join(Student, Payment.student_id == Student.id).join(User, Student.user_id == User.id).all()
     return render_template('admin/finances.html', payments=payments)
 
 # Student routes
