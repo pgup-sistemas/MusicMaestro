@@ -4,6 +4,7 @@ from flask_login import login_required, current_user
 from functools import wraps
 import jwt
 from datetime import datetime, timedelta
+from werkzeug.security import check_password_hash
 from models import *
 from app import db
 from sqlalchemy import and_
