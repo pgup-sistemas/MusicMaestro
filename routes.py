@@ -920,7 +920,6 @@ def payment_webhook():
 
 @admin.route('/send-payment-reminders', methods=['POST'])
 @login_required
-@csrf.exempt
 def send_payment_reminders():
     if current_user.user_type not in ['admin', 'secretary']:
         return jsonify({'error': 'Acesso negado'}), 403
@@ -1475,7 +1474,6 @@ def upload_material(course_id):
 
 @admin.route('/generate-monthly-payments', methods=['POST'])
 @login_required
-@csrf.exempt
 def generate_monthly_payments():
     if current_user.user_type not in ['admin', 'secretary']:
         return jsonify({'error': 'Acesso negado'}), 403

@@ -114,7 +114,7 @@ function confirmGeneratePayments() {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
-            'X-CSRFToken': '{{ csrf_token() }}'
+            'X-CSRFToken': document.querySelector('meta[name=csrf-token]').getAttribute('content')
         },
         body: JSON.stringify({ month: parseInt(month), year: parseInt(year) })
     })
@@ -155,7 +155,8 @@ function sendPaymentReminders() {
     fetch('/admin/send-payment-reminders', {
         method: 'POST',
         headers: {
-            'X-CSRFToken': '{{ csrf_token() }}'
+            'Content-Type': 'application/json',
+            'X-CSRFToken': document.querySelector('meta[name=csrf-token]').getAttribute('content')
         }
     })
     .then(response => response.json())
