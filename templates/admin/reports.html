@@ -1,0 +1,213 @@
+
+{% extends "base.html" %}
+
+{% block title %}Relatórios - Escola Sol Maior{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mt-4 mb-4">
+            <h1><i class="fas fa-chart-bar me-2"></i>Relatórios e Análises</h1>
+            <div>
+                <a href="{{ url_for('admin.financial_report') }}" class="btn btn-info">
+                    <i class="fas fa-dollar-sign me-2"></i>Relatório Financeiro
+                </a>
+                <a href="{{ url_for('admin.academic_report') }}" class="btn btn-success">
+                    <i class="fas fa-graduation-cap me-2"></i>Relatório Acadêmico
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Financial Overview -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card text-center bg-success text-white">
+            <div class="card-body">
+                <h3>R$ {{ "%.2f"|format(total_revenue) }}</h3>
+                <p class="mb-0">Receita Total</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center bg-warning text-white">
+            <div class="card-body">
+                <h3>R$ {{ "%.2f"|format(pending_payments) }}</h3>
+                <p class="mb-0">Pagamentos Pendentes</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center bg-danger text-white">
+            <div class="card-body">
+                <h3>R$ {{ "%.2f"|format(overdue_payments) }}</h3>
+                <p class="mb-0">Pagamentos Vencidos</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center bg-primary text-white">
+            <div class="card-body">
+                <h3>{{ total_active_students }}</h3>
+                <p class="mb-0">Alunos Ativos</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Critical Issues -->
+{% if orphaned_students %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card border-warning">
+            <div class="card-header bg-warning text-dark">
+                <h5><i class="fas fa-exclamation-triangle me-2"></i>Alunos sem Matrícula ({{ orphaned_students|length }})</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Nome</th>
+                                <th>E-mail</th>
+                                <th>Data de Cadastro</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for student, user in orphaned_students %}
+                            <tr>
+                                <td>{{ user.full_name }}</td>
+                                <td>{{ user.email }}</td>
+                                <td>{{ student.registration_date.strftime('%d/%m/%Y') if student.registration_date else '-' }}</td>
+                                <td>
+                                    <a href="{{ url_for('admin.view_student', student_id=student.id) }}" class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-eye"></i> Ver
+                                    </a>
+                                    <button class="btn btn-sm btn-outline-success" onclick="enrollStudent({{ student.id }}, '{{ user.full_name }}')">
+                                        <i class="fas fa-plus"></i> Matricular
+                                    </button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Course Statistics -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-chart-pie me-2"></i>Desempenho dos Cursos</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Curso</th>
+                                <th>Alunos Ativos</th>
+                                <th>Taxa de Ocupação</th>
+                                <th>Receita Mensal</th>
+                                <th>Vagas Disponíveis</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for stat in course_stats %}
+                            <tr>
+                                <td>
+                                    <strong>{{ stat.course.name }}</strong><br>
+                                    <small class="text-muted">{{ stat.course.instrument }}</small>
+                                </td>
+                                <td>{{ stat.active_students }}</td>
+                                <td>
+                                    <div class="progress" style="height: 20px;">
+                                        {% if stat.occupancy_rate >= 80 %}
+                                            <div class="progress-bar bg-success" style="width: {{ stat.occupancy_rate }}%">{{ "%.0f"|format(stat.occupancy_rate) }}%</div>
+                                        {% elif stat.occupancy_rate >= 50 %}
+                                            <div class="progress-bar bg-warning" style="width: {{ stat.occupancy_rate }}%">{{ "%.0f"|format(stat.occupancy_rate) }}%</div>
+                                        {% else %}
+                                            <div class="progress-bar bg-danger" style="width: {{ stat.occupancy_rate }}%">{{ "%.0f"|format(stat.occupancy_rate) }}%</div>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                                <td>R$ {{ "%.2f"|format(stat.monthly_revenue) }}</td>
+                                <td>{{ stat.available_spots }}</td>
+                                <td>
+                                    {% if stat.occupancy_rate >= 80 %}
+                                        <span class="badge bg-success">Excelente</span>
+                                    {% elif stat.occupancy_rate >= 50 %}
+                                        <span class="badge bg-warning">Bom</span>
+                                    {% elif stat.occupancy_rate > 0 %}
+                                        <span class="badge bg-info">Regular</span>
+                                    {% else %}
+                                        <span class="badge bg-danger">Sem Alunos</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal for Quick Enrollment -->
+<div class="modal fade" id="quickEnrollModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Matrícula Rápida</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="quickEnrollForm" method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <input type="hidden" id="quickStudentId" name="student_id">
+                <div class="modal-body">
+                    <p>Matricular aluno: <strong id="studentName"></strong></p>
+                    <div class="mb-3">
+                        <label for="courseSelect" class="form-label">Selecionar Curso</label>
+                        <select class="form-select" id="courseSelect" name="course_id" required>
+                            <option value="">Selecione um curso...</option>
+                            {% for stat in course_stats %}
+                                {% if stat.available_spots > 0 %}
+                                <option value="{{ stat.course.id }}">{{ stat.course.name }} ({{ stat.available_spots }} vagas)</option>
+                                {% endif %}
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="enrollmentDate" class="form-label">Data de Matrícula</label>
+                        <input type="date" class="form-control" id="enrollmentDate" name="enrollment_date" value="{{ today }}" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-success">Matricular</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function enrollStudent(studentId, studentName) {
+    document.getElementById('quickStudentId').value = studentId;
+    document.getElementById('studentName').textContent = studentName;
+    document.getElementById('quickEnrollForm').action = '/admin/quick-enroll';
+    
+    const modal = new bootstrap.Modal(document.getElementById('quickEnrollModal'));
+    modal.show();
+}
+</script>
+{% endblock %}

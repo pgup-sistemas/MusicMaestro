@@ -997,6 +997,123 @@ def enroll_student(course_id):
     course = Course.query.get_or_404(course_id)
     student_id = request.form.get('student_id')
     enrollment_date = request.form.get('enrollment_date')
+
+
+# Reporting routes
+@admin.route('/reports')
+@login_required
+def reports():
+    if current_user.user_type not in ['admin', 'secretary']:
+        flash('Acesso negado.', 'danger')
+        return redirect(url_for('main.index'))
+    
+    # Financial metrics
+    total_revenue = db.session.query(db.func.sum(Payment.amount)).filter_by(status='paid').scalar() or 0
+    pending_payments = db.session.query(db.func.sum(Payment.amount)).filter_by(status='pending').scalar() or 0
+    overdue_payments = db.session.query(db.func.sum(Payment.amount)).filter_by(status='overdue').scalar() or 0
+    
+    # Academic metrics
+    total_active_students = db.session.query(db.func.count(Enrollment.id)).filter_by(status='active').scalar() or 0
+    total_courses = Course.query.filter_by(is_active=True).count()
+    total_teachers = Teacher.query.count()
+    
+    # Students without enrollments
+    orphaned_students = db.session.query(Student, User).join(User).outerjoin(Enrollment).filter(
+        Enrollment.id == None,
+        User.is_active == True
+    ).all()
+    
+    # Course occupancy
+    course_stats = []
+    courses = Course.query.filter_by(is_active=True).all()
+    for course in courses:
+        active_enrollments = Enrollment.query.filter_by(course_id=course.id, status='active').count()
+        occupancy_rate = (active_enrollments / course.max_students * 100) if course.max_students > 0 else 0
+        revenue = active_enrollments * float(course.monthly_price or 0)
+        
+        course_stats.append({
+            'course': course,
+            'active_students': active_enrollments,
+            'occupancy_rate': occupancy_rate,
+            'monthly_revenue': revenue,
+            'available_spots': course.max_students - active_enrollments
+        })
+    
+    return render_template('admin/reports.html',
+                         total_revenue=total_revenue,
+                         pending_payments=pending_payments,
+                         overdue_payments=overdue_payments,
+                         total_active_students=total_active_students,
+                         total_courses=total_courses,
+                         total_teachers=total_teachers,
+                         orphaned_students=orphaned_students,
+                         course_stats=course_stats)
+
+@admin.route('/reports/financial')
+@login_required
+def financial_report():
+    if current_user.user_type not in ['admin', 'secretary']:
+        flash('Acesso negado.', 'danger')
+        return redirect(url_for('main.index'))
+    
+    # Monthly revenue analysis
+    monthly_revenue = db.session.query(
+        db.func.date_trunc('month', Payment.payment_date).label('month'),
+        db.func.sum(Payment.amount).label('total')
+    ).filter(Payment.status == 'paid').group_by('month').order_by('month').all()
+    
+    # Payment status breakdown
+    payment_stats = db.session.query(
+        Payment.status,
+        db.func.count(Payment.id).label('count'),
+        db.func.sum(Payment.amount).label('total')
+    ).group_by(Payment.status).all()
+    
+    # Students by payment status
+    students_payment_status = db.session.query(
+        Student, User, db.func.count(Payment.id).label('total_payments'),
+        db.func.sum(db.case([(Payment.status == 'pending', 1)], else_=0)).label('pending_count'),
+        db.func.sum(db.case([(Payment.status == 'overdue', 1)], else_=0)).label('overdue_count')
+    ).join(User).outerjoin(Payment).group_by(Student.id, User.id).all()
+    
+    return render_template('admin/financial_report.html',
+                         monthly_revenue=monthly_revenue,
+                         payment_stats=payment_stats,
+                         students_payment_status=students_payment_status)
+
+@admin.route('/reports/academic')
+@login_required
+def academic_report():
+    if current_user.user_type not in ['admin', 'secretary']:
+        flash('Acesso negado.', 'danger')
+        return redirect(url_for('main.index'))
+    
+    # Enrollment trends
+    enrollment_trends = db.session.query(
+        db.func.date_trunc('month', Enrollment.enrollment_date).label('month'),
+        db.func.count(Enrollment.id).label('new_enrollments')
+    ).group_by('month').order_by('month').all()
+    
+    # Course performance
+    course_performance = db.session.query(
+        Course, 
+        db.func.count(Enrollment.id).label('total_enrollments'),
+        db.func.sum(db.case([(Enrollment.status == 'active', 1)], else_=0)).label('active_enrollments'),
+        db.func.sum(db.case([(Enrollment.status == 'completed', 1)], else_=0)).label('completed_enrollments')
+    ).outerjoin(Enrollment).group_by(Course.id).all()
+    
+    # Teacher workload
+    teacher_workload = db.session.query(
+        Teacher, User,
+        db.func.count(Course.id).label('courses_count'),
+        db.func.count(Enrollment.id).label('total_students')
+    ).join(User).outerjoin(Course).outerjoin(Enrollment).group_by(Teacher.id, User.id).all()
+    
+    return render_template('admin/academic_report.html',
+                         enrollment_trends=enrollment_trends,
+                         course_performance=course_performance,
+                         teacher_workload=teacher_workload)
+
     
     if not student_id or not enrollment_date:
         flash('Dados incompletos.', 'danger')
@@ -1080,6 +1197,74 @@ def download_material(material_id):
 
 @admin.route('/material/<int:material_id>/delete', methods=['POST'])
 @login_required
+
+
+@admin.route('/quick-enroll', methods=['POST'])
+@login_required
+def quick_enroll():
+    if current_user.user_type not in ['admin', 'secretary']:
+        flash('Acesso negado.', 'danger')
+        return redirect(url_for('main.index'))
+    
+    student_id = request.form.get('student_id')
+    course_id = request.form.get('course_id')
+    enrollment_date = request.form.get('enrollment_date')
+    
+    if not all([student_id, course_id, enrollment_date]):
+        flash('Dados incompletos para matrícula.', 'danger')
+        return redirect(url_for('admin.reports'))
+    
+    # Validate student and course
+    student = Student.query.get_or_404(student_id)
+    course = Course.query.get_or_404(course_id)
+    
+    # Check if already enrolled
+    existing = Enrollment.query.filter_by(
+        student_id=student_id,
+        course_id=course_id,
+        status='active'
+    ).first()
+    
+    if existing:
+        flash('Aluno já está matriculado neste curso.', 'warning')
+        return redirect(url_for('admin.reports'))
+    
+    # Check course capacity
+    active_enrollments = Enrollment.query.filter_by(
+        course_id=course_id,
+        status='active'
+    ).count()
+    
+    if active_enrollments >= course.max_students:
+        flash('Curso já atingiu a capacidade máxima.', 'warning')
+        return redirect(url_for('admin.reports'))
+    
+    # Create enrollment
+    enrollment = Enrollment()
+    enrollment.student_id = student_id
+    enrollment.course_id = course_id
+    enrollment.enrollment_date = datetime.strptime(enrollment_date, '%Y-%m-%d').date()
+    enrollment.status = 'active'
+    enrollment.monthly_payment = course.monthly_price
+    enrollment.start_date = datetime.strptime(enrollment_date, '%Y-%m-%d').date()
+    
+    db.session.add(enrollment)
+    
+    # Auto-generate first payment
+    payment = Payment()
+    payment.student_id = student_id
+    payment.amount = course.monthly_price
+    payment.due_date = datetime.strptime(enrollment_date, '%Y-%m-%d').date()
+    payment.status = 'pending'
+    payment.reference_month = datetime.strptime(enrollment_date, '%Y-%m-%d').date()
+    payment.notes = f'Primeira mensalidade do curso {course.name}'
+    
+    db.session.add(payment)
+    db.session.commit()
+    
+    flash('Aluno matriculado com sucesso! Pagamento gerado automaticamente.', 'success')
+    return redirect(url_for('admin.reports'))
+
 def delete_material(material_id):
     if current_user.user_type not in ['admin', 'secretary']:
         return jsonify({'error': 'Acesso negado'}), 403
