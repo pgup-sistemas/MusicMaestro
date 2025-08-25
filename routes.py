@@ -843,6 +843,132 @@ def experimental_class():
 def uploaded_file(filename):
     return send_from_directory(current_app.config['UPLOAD_FOLDER'], filename)
 
+# Payment Gateway Routes
+@admin.route('/payment/<int:payment_id>/create-pix')
+@login_required
+def create_pix_payment(payment_id):
+    if current_user.user_type not in ['admin', 'secretary']:
+        return jsonify({'error': 'Acesso negado'}), 403
+    
+    payment = Payment.query.get_or_404(payment_id)
+    student = Student.query.get(payment.student_id)
+    user = User.query.get(student.user_id)
+    
+    from payment_gateway import PaymentGateway
+    gateway = PaymentGateway()
+    
+    payer_info = {
+        'name': user.full_name,
+        'email': user.email,
+        'document': ''  # CPF se disponível
+    }
+    
+    result = gateway.create_pix_payment(
+        payment_id=payment.id,
+        amount=payment.amount,
+        description=f"Mensalidade {payment.reference_month.strftime('%m/%Y')}",
+        payer_info=payer_info
+    )
+    
+    if result['success']:
+        from models import PaymentTransaction
+        
+        # Criar registro da transação
+        transaction = PaymentTransaction()
+        transaction.payment_id = payment.id
+        transaction.transaction_id = result['transaction_id']
+        transaction.payment_method = 'PIX'
+        transaction.amount = payment.amount
+        transaction.pix_code = result['pix_code']
+        transaction.pix_qr_code = result['pix_qr_code']
+        transaction.expires_at = datetime.strptime(result['expires_at'], '%Y-%m-%dT%H:%M:%S')
+        
+        db.session.add(transaction)
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'pix_code': result['pix_code'],
+            'qr_code': result['pix_qr_code'],
+            'expires_at': result['expires_at']
+        })
+    else:
+        return jsonify({'success': False, 'error': result['error']})
+
+@student_bp.route('/payment/<int:payment_id>/pay')
+@login_required
+def pay_online(payment_id):
+    if current_user.user_type != 'student':
+        flash('Acesso negado.', 'danger')
+        return redirect(url_for('main.index'))
+    
+    student = Student.query.filter_by(user_id=current_user.id).first()
+    if not student:
+        flash('Perfil de aluno não encontrado.', 'danger')
+        return redirect(url_for('main.index'))
+    
+    payment = Payment.query.filter_by(id=payment_id, student_id=student.id).first()
+    if not payment:
+        flash('Pagamento não encontrado.', 'danger')
+        return redirect(url_for('student.student_dashboard'))
+    
+    if payment.status == 'paid':
+        flash('Pagamento já foi realizado.', 'info')
+        return redirect(url_for('student.student_dashboard'))
+    
+    return render_template('student/payment_online.html', payment=payment)
+
+@main.route('/payment-webhook', methods=['POST'])
+def payment_webhook():
+    """
+    Webhook para receber notificações do gateway de pagamento
+    """
+    try:
+        data = request.get_json()
+        
+        transaction_id = data.get('transaction_id')
+        status = data.get('status')
+        paid_amount = data.get('amount')
+        
+        from payment_gateway import PaymentProcessor
+        
+        success = PaymentProcessor.process_payment_confirmation(
+            transaction_id=transaction_id,
+            status=status,
+            paid_amount=paid_amount
+        )
+        
+        if success:
+            return jsonify({'status': 'ok'}), 200
+        else:
+            return jsonify({'status': 'error'}), 400
+            
+    except Exception as e:
+        current_app.logger.error(f'Webhook error: {e}')
+        return jsonify({'status': 'error'}), 500
+
+@admin.route('/send-payment-reminders', methods=['POST'])
+@login_required
+def send_payment_reminders():
+    if current_user.user_type not in ['admin', 'secretary']:
+        return jsonify({'error': 'Acesso negado'}), 403
+    
+    from notification_service import NotificationService
+    
+    try:
+        results = NotificationService.check_and_send_payment_reminders()
+        
+        return jsonify({
+            'success': True,
+            'warning_sent': results['warning_sent'],
+            'overdue_sent': results['overdue_sent'],
+            'message': f"Enviados {results['warning_sent']} avisos e {results['overdue_sent']} cobranças"
+        })
+        
+    except Exception as e:
+        current_app.logger.error(f'Error sending reminders: {e}')
+        return jsonify({'error': 'Erro ao enviar lembretes'}), 500
+
 # Additional admin routes for course management
 @admin.route('/course/<int:course_id>')
 @login_required
@@ -1125,6 +1251,8 @@ def reports():
         flash('Acesso negado.', 'danger')
         return redirect(url_for('main.index'))
     
+    from sqlalchemy import func, extract
+    
     # Estatísticas gerais
     total_students = Student.query.count()
     active_students = db.session.query(Student).join(User).filter(User.is_active == True).count()
@@ -1149,30 +1277,81 @@ def reports():
         Course.is_active == True
     ).all()
     
-    # Pagamentos pendentes
+    # Análise de inadimplência
+    today = datetime.now().date()
     pending_payments = db.session.query(Payment, Student, User).join(
         Student, Payment.student_id == Student.id
     ).join(
         User, Student.user_id == User.id
     ).filter(Payment.status == 'pending').all()
     
+    overdue_payments = db.session.query(Payment, Student, User).join(
+        Student, Payment.student_id == Student.id
+    ).join(
+        User, Student.user_id == User.id
+    ).filter(
+        Payment.status.in_(['pending', 'overdue']),
+        Payment.due_date < today
+    ).all()
+    
+    # Taxa de inadimplência
+    total_payments = Payment.query.count()
+    overdue_count = len(overdue_payments)
+    default_rate = (overdue_count / total_payments * 100) if total_payments > 0 else 0
+    
     # Receita mensal
-    from sqlalchemy import func, extract
     current_month_revenue = db.session.query(func.sum(Payment.amount)).filter(
         Payment.status == 'paid',
         extract('month', Payment.payment_date) == datetime.now().month,
         extract('year', Payment.payment_date) == datetime.now().year
     ).scalar() or 0
     
-    # Matrículas por curso
+    # Receita perdida por inadimplência
+    lost_revenue = db.session.query(func.sum(Payment.amount)).filter(
+        Payment.status.in_(['pending', 'overdue']),
+        Payment.due_date < today
+    ).scalar() or 0
+    
+    # Matrículas por curso com detalhes financeiros
     enrollment_stats = db.session.query(
         Course.name,
-        func.count(Enrollment.id).label('total_enrollments')
+        Course.monthly_price,
+        func.count(Enrollment.id).label('total_enrollments'),
+        func.sum(Course.monthly_price).label('potential_revenue')
     ).join(
         Enrollment, Course.id == Enrollment.course_id
     ).filter(
         Enrollment.status == 'active'
-    ).group_by(Course.id, Course.name).all()
+    ).group_by(Course.id, Course.name, Course.monthly_price).all()
+    
+    # Análise de crescimento (últimos 12 meses)
+    growth_data = []
+    for i in range(12):
+        target_date = datetime.now() - timedelta(days=30*i)
+        enrollments_count = Enrollment.query.filter(
+            extract('month', Enrollment.enrollment_date) == target_date.month,
+            extract('year', Enrollment.enrollment_date) == target_date.year
+        ).count()
+        growth_data.append({
+            'month': target_date.strftime('%m/%Y'),
+            'enrollments': enrollments_count
+        })
+    
+    # Top 5 alunos inadimplentes
+    top_defaulters = db.session.query(
+        User.full_name,
+        func.sum(Payment.amount).label('total_debt'),
+        func.count(Payment.id).label('overdue_count')
+    ).join(
+        Student, User.id == Student.user_id
+    ).join(
+        Payment, Student.id == Payment.student_id
+    ).filter(
+        Payment.status.in_(['pending', 'overdue']),
+        Payment.due_date < today
+    ).group_by(User.id, User.full_name).order_by(
+        func.sum(Payment.amount).desc()
+    ).limit(5).all()
     
     return render_template('admin/reports.html',
                          total_students=total_students,
@@ -1183,8 +1362,13 @@ def reports():
                          students_without_enrollment=students_without_enrollment,
                          courses_without_teacher=courses_without_teacher,
                          pending_payments=pending_payments,
+                         overdue_payments=overdue_payments,
+                         default_rate=default_rate,
                          current_month_revenue=current_month_revenue,
-                         enrollment_stats=enrollment_stats)
+                         lost_revenue=lost_revenue,
+                         enrollment_stats=enrollment_stats,
+                         growth_data=growth_data,
+                         top_defaulters=top_defaulters)
 
 @admin.route('/financial-summary')
 @login_required

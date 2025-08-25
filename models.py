@@ -161,11 +161,31 @@ class Material(db.Model):
     course_id = db.Column(db.Integer, db.ForeignKey('courses.id'), nullable=False)
     title = db.Column(db.String(200), nullable=False)
     description = db.Column(db.Text)
-    file_path = db.Column(db.String(500))
+    filename = db.Column(db.String(500))  # Nome do arquivo
     file_type = db.Column(db.String(50))  # pdf, mp3, mp4, etc.
     file_size = db.Column(db.Integer)
-    upload_date = db.Column(db.DateTime, default=datetime.utcnow)
+    uploaded_at = db.Column(db.DateTime, default=datetime.utcnow)
+    uploaded_by_id = db.Column(db.Integer, db.ForeignKey('users.id'))
     is_public = db.Column(db.Boolean, default=False)
+
+class PaymentTransaction(db.Model):
+    __tablename__ = 'payment_transactions'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    payment_id = db.Column(db.Integer, db.ForeignKey('payments.id'), nullable=False)
+    transaction_id = db.Column(db.String(100), unique=True, nullable=False)
+    payment_method = db.Column(db.String(50), nullable=False)  # PIX, CREDIT_CARD, BOLETO
+    amount = db.Column(db.Numeric(10, 2), nullable=False)
+    status = db.Column(db.String(20), default='pending')  # pending, completed, failed, expired
+    gateway_data = db.Column(db.Text)  # JSON com dados do gateway
+    pix_code = db.Column(db.Text)  # Código PIX se aplicável
+    pix_qr_code = db.Column(db.Text)  # QR Code PIX se aplicável
+    expires_at = db.Column(db.DateTime)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    completed_at = db.Column(db.DateTime)
+    
+    # Relacionamento
+    payment = db.relationship('Payment', backref='transactions')
 
 class ExperimentalClass(db.Model):
     __tablename__ = 'experimental_classes'

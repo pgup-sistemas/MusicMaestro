@@ -1,0 +1,43 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Pagamento em Atraso</title>
+</head>
+<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+    <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h2 style="color: #dc3545;">Pagamento em Atraso</h2>
+        
+        <p>Olá <strong>{{ user.full_name }}</strong>,</p>
+        
+        <p>Identificamos que você possui um pagamento em atraso:</p>
+        
+        <div style="background: #f8d7da; padding: 15px; border-radius: 5px; margin: 20px 0; border-left: 4px solid #dc3545;">
+            <p><strong>Valor:</strong> R$ {{ "%.2f"|format(payment.amount) }}</p>
+            <p><strong>Data de Vencimento:</strong> {{ payment.due_date.strftime('%d/%m/%Y') }}</p>
+            <p><strong>Referência:</strong> {{ payment.reference_month.strftime('%m/%Y') }}</p>
+            <p><strong>Dias em atraso:</strong> {{ (date.today() - payment.due_date).days }} dias</p>
+        </div>
+        
+        <p><strong style="color: #dc3545;">URGENTE:</strong> Regularize seu pagamento o mais breve possível para evitar a suspensão das aulas.</p>
+        
+        <p><strong>Formas de Pagamento:</strong></p>
+        <ul>
+            <li>PIX: [chave-pix]</li>
+            <li>Transferência Bancária: [dados-bancarios]</li>
+            <li>Presencial na escola</li>
+        </ul>
+        
+        <p>Entre em contato conosco para negociar o pagamento se necessário.</p>
+        
+        <hr style="margin: 30px 0;">
+        
+        <p style="font-size: 12px; color: #666;">
+            <strong>Escola Sol Maior</strong><br>
+            E-mail: admin@solmaior.com<br>
+            Telefone: (11) 1234-5678
+        </p>
+    </div>
+</body>
+</html>

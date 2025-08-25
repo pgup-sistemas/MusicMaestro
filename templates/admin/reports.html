@@ -1,4 +1,3 @@
-
 {% extends "base.html" %}
 
 {% block title %}Relatórios - Sol Maior{% endblock %}
@@ -93,7 +92,7 @@
             <div class="card">
                 <div class="card-header bg-danger text-white">
                     <h5 class="mb-0">
-                        <i class="fas fa-exclamation-triangle"></i> 
+                        <i class="fas fa-exclamation-triangle"></i>
                         Alunos Sem Matrícula Ativa ({{ students_without_enrollment|length }})
                     </h5>
                 </div>
@@ -114,7 +113,7 @@
                                     <td>{{ user.full_name }}</td>
                                     <td>{{ user.email }}</td>
                                     <td>
-                                        <a href="{{ url_for('admin.quick_enroll') }}?student_id={{ student.id }}" 
+                                        <a href="{{ url_for('admin.quick_enroll') }}?student_id={{ student.id }}"
                                            class="btn btn-sm btn-primary">
                                             <i class="fas fa-user-plus"></i> Matricular
                                         </a>
@@ -130,12 +129,12 @@
                 </div>
             </div>
         </div>
-        
+
         <div class="col-md-6">
             <div class="card">
                 <div class="card-header bg-warning text-dark">
                     <h5 class="mb-0">
-                        <i class="fas fa-user-slash"></i> 
+                        <i class="fas fa-user-slash"></i>
                         Cursos Sem Professor ({{ courses_without_teacher|length }})
                     </h5>
                 </div>
@@ -156,7 +155,7 @@
                                     <td>{{ course.name }}</td>
                                     <td>{{ course.instrument }}</td>
                                     <td>
-                                        <a href="{{ url_for('admin.edit_course', course_id=course.id) }}" 
+                                        <a href="{{ url_for('admin.edit_course', course_id=course.id) }}"
                                            class="btn btn-sm btn-warning">
                                             <i class="fas fa-edit"></i> Atribuir
                                         </a>
@@ -180,7 +179,7 @@
             <div class="card">
                 <div class="card-header bg-info text-white">
                     <h5 class="mb-0">
-                        <i class="fas fa-clock"></i> 
+                        <i class="fas fa-clock"></i>
                         Pagamentos Pendentes ({{ pending_payments|length }})
                     </h5>
                 </div>
@@ -213,11 +212,11 @@
                                         {% endif %}
                                     </td>
                                     <td>
-                                        <a href="{{ url_for('admin.view_payment', payment_id=payment.id) }}" 
+                                        <a href="{{ url_for('admin.view_payment', payment_id=payment.id) }}"
                                            class="btn btn-sm btn-outline-info">
                                             <i class="fas fa-eye"></i> Ver
                                         </a>
-                                        <a href="{{ url_for('admin.mark_payment_paid', payment_id=payment.id) }}" 
+                                        <a href="{{ url_for('admin.mark_payment_paid', payment_id=payment.id) }}"
                                            class="btn btn-sm btn-success">
                                             <i class="fas fa-check"></i> Pago
                                         </a>
@@ -241,7 +240,7 @@
             <div class="card">
                 <div class="card-header">
                     <h5 class="mb-0">
-                        <i class="fas fa-chart-bar"></i> 
+                        <i class="fas fa-chart-bar"></i>
                         Matrículas por Curso
                     </h5>
                 </div>
@@ -263,7 +262,7 @@
                                     <td>{{ total_enrollments }}</td>
                                     <td>
                                         <div class="progress" style="height: 20px;">
-                                            <div class="progress-bar" role="progressbar" 
+                                            <div class="progress-bar" role="progressbar"
                                                  style="width: {{ (total_enrollments / 20 * 100)|min(100) }}%">
                                                 {{ total_enrollments }}
                                             </div>
