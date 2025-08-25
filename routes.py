@@ -1497,6 +1497,178 @@ def upload_material(course_id):
     course = Course.query.get_or_404(course_id)
     
     # Check if teacher is uploading for their own course
+
+
+@admin.route('/generate-monthly-payments', methods=['POST'])
+@login_required
+def generate_monthly_payments():
+    if current_user.user_type not in ['admin', 'secretary']:
+        return jsonify({'error': 'Acesso negado'}), 403
+    
+    try:
+        from datetime import datetime, date, timedelta
+        from calendar import monthrange
+        
+        # Parâmetros
+        month = int(request.json.get('month', datetime.now().month))
+        year = int(request.json.get('year', datetime.now().year))
+        
+        # Data de vencimento (dia 10 do mês)
+        due_day = 10
+        due_date = date(year, month, due_day)
+        reference_month = date(year, month, 1)
+        
+        # Buscar matrículas ativas
+        active_enrollments = db.session.query(Enrollment, Student, Course).join(
+            Student, Enrollment.student_id == Student.id
+        ).join(
+            Course, Enrollment.course_id == Course.id
+        ).filter(
+            Enrollment.status == 'active'
+        ).all()
+        
+        created_payments = 0
+        
+        for enrollment, student, course in active_enrollments:
+            # Verificar se já existe pagamento para este mês
+            existing_payment = Payment.query.filter_by(
+                student_id=student.id,
+                reference_month=reference_month
+            ).first()
+            
+            if not existing_payment:
+                # Criar novo pagamento
+                payment = Payment()
+                payment.student_id = student.id
+                payment.amount = enrollment.monthly_payment or course.monthly_price
+                payment.due_date = due_date
+                payment.status = 'pending'
+                payment.reference_month = reference_month
+                payment.notes = f'Mensalidade {month:02d}/{year} - {course.name}'
+                
+                db.session.add(payment)
+                created_payments += 1
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'created_payments': created_payments,
+            'message': f'{created_payments} mensalidades geradas para {month:02d}/{year}'
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f'Error generating payments: {e}')
+        return jsonify({'error': 'Erro ao gerar mensalidades'}), 500
+
+@admin.route('/payment/<int:payment_id>/status')
+@login_required
+def check_payment_status(payment_id):
+    """Verifica status de pagamento em tempo real"""
+    payment = Payment.query.get_or_404(payment_id)
+    
+    # Verificar se há transação associada
+    transaction = PaymentTransaction.query.filter_by(payment_id=payment_id).first()
+    
+    if transaction and transaction.status == 'pending':
+        # Consultar gateway para verificar status
+        from payment_gateway import PaymentGateway
+        gateway = PaymentGateway()
+        result = gateway.check_payment_status(transaction.transaction_id)
+        
+        if result['success'] and result['status'] == 'paid':
+            # Atualizar pagamento
+            payment.status = 'paid'
+            payment.payment_date = datetime.now().date()
+            transaction.status = 'completed'
+            db.session.commit()
+    
+    return jsonify({
+        'status': payment.status,
+        'payment_date': payment.payment_date.isoformat() if payment.payment_date else None
+    })
+
+@admin.route('/calendar')
+@login_required
+def calendar():
+    if current_user.user_type not in ['admin', 'secretary', 'teacher']:
+        flash('Acesso negado.', 'danger')
+        return redirect(url_for('main.index'))
+    
+    # Buscar horários com informações completas
+    schedules = db.session.query(
+        Schedule, Course, Teacher, User, Room
+    ).join(
+        Course, Schedule.course_id == Course.id
+    ).join(
+        Teacher, Schedule.teacher_id == Teacher.id
+    ).join(
+        User, Teacher.user_id == User.id
+    ).join(
+        Room, Schedule.room_id == Room.id
+    ).filter(Schedule.is_active == True).all()
+    
+    return render_template('admin/calendar.html', schedules=schedules)
+
+@admin.route('/export-report/<report_type>')
+@login_required
+def export_report(report_type):
+    if current_user.user_type not in ['admin', 'secretary']:
+        flash('Acesso negado.', 'danger')
+        return redirect(url_for('main.index'))
+    
+    try:
+        import csv
+        from io import StringIO
+        from flask import make_response
+        
+        output = StringIO()
+        
+        if report_type == 'students':
+            writer = csv.writer(output)
+            writer.writerow(['Nome', 'Email', 'Telefone', 'Data Nascimento', 'Status'])
+            
+            students = db.session.query(Student, User).join(User).all()
+            for student, user in students:
+                writer.writerow([
+                    user.full_name,
+                    user.email,
+                    user.phone or '',
+                    student.birth_date.strftime('%d/%m/%Y') if student.birth_date else '',
+                    'Ativo' if user.is_active else 'Inativo'
+                ])
+        
+        elif report_type == 'payments':
+            writer = csv.writer(output)
+            writer.writerow(['Aluno', 'Valor', 'Vencimento', 'Status', 'Mês Referência'])
+            
+            payments = db.session.query(Payment, Student, User).join(
+                Student, Payment.student_id == Student.id
+            ).join(User, Student.user_id == User.id).all()
+            
+            for payment, student, user in payments:
+                writer.writerow([
+                    user.full_name,
+                    f'R$ {payment.amount:.2f}',
+                    payment.due_date.strftime('%d/%m/%Y'),
+                    payment.status,
+                    payment.reference_month.strftime('%m/%Y')
+                ])
+        
+        output.seek(0)
+        response = make_response(output.getvalue())
+        response.headers['Content-Type'] = 'text/csv'
+        response.headers['Content-Disposition'] = f'attachment; filename={report_type}.csv'
+        
+        return response
+        
+    except Exception as e:
+        current_app.logger.error(f'Export error: {e}')
+        flash('Erro ao exportar relatório.', 'danger')
+        return redirect(url_for('admin.reports'))
+
+
     if current_user.user_type == 'teacher':
         teacher = Teacher.query.filter_by(user_id=current_user.id).first()
         if not teacher or course.teacher_id != teacher.id:

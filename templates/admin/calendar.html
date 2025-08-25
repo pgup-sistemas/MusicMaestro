@@ -1,0 +1,115 @@
+
+{% extends "base.html" %}
+
+{% block title %}Calendário de Aulas - Sol Maior{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center pb-2 mb-3 border-bottom">
+                <h1 class="h2">
+                    <i class="fas fa-calendar-alt me-2"></i>Calendário de Aulas
+                </h1>
+                <div class="btn-group">
+                    <button class="btn btn-outline-primary active" data-view="week">Semana</button>
+                    <button class="btn btn-outline-primary" data-view="day">Dia</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <div id="calendar-container">
+                        <!-- Calendário Semanal -->
+                        <div class="table-responsive">
+                            <table class="table table-bordered calendar-table">
+                                <thead class="bg-primary text-white">
+                                    <tr>
+                                        <th width="120">Horário</th>
+                                        <th>Segunda</th>
+                                        <th>Terça</th>
+                                        <th>Quarta</th>
+                                        <th>Quinta</th>
+                                        <th>Sexta</th>
+                                        <th>Sábado</th>
+                                        <th>Domingo</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for hour in range(7, 22) %}
+                                    <tr>
+                                        <td class="bg-light font-weight-bold">{{ "%02d:00"|format(hour) }}</td>
+                                        {% for day in range(7) %}
+                                        <td class="calendar-cell" data-day="{{ day }}" data-hour="{{ hour }}">
+                                            {% for schedule, course, teacher, user, room in schedules %}
+                                                {% if schedule.day_of_week == day and schedule.start_time.hour <= hour < schedule.end_time.hour %}
+                                                <div class="schedule-block bg-info text-white p-2 mb-1 rounded">
+                                                    <small>
+                                                        <strong>{{ course.name }}</strong><br>
+                                                        {{ user.full_name }}<br>
+                                                        {{ room.name }}<br>
+                                                        {{ schedule.start_time.strftime('%H:%M') }} - {{ schedule.end_time.strftime('%H:%M') }}
+                                                    </small>
+                                                </div>
+                                                {% endif %}
+                                            {% endfor %}
+                                        </td>
+                                        {% endfor %}
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.calendar-table {
+    font-size: 0.9em;
+}
+
+.calendar-cell {
+    height: 60px;
+    vertical-align: top;
+    position: relative;
+}
+
+.schedule-block {
+    font-size: 0.8em;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.schedule-block:hover {
+    opacity: 0.8;
+    transform: scale(1.02);
+}
+</style>
+
+<script>
+// Funcionalidade do calendário
+document.addEventListener('DOMContentLoaded', function() {
+    // Alternar visualização
+    document.querySelectorAll('[data-view]').forEach(button => {
+        button.addEventListener('click', function() {
+            document.querySelectorAll('[data-view]').forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            
+            // Implementar mudança de visualização
+            if (this.dataset.view === 'day') {
+                // Mostrar apenas um dia
+                alert('Visualização por dia será implementada em breve');
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

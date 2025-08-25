@@ -44,9 +44,13 @@
                                     <li><a class="dropdown-item" href="{{ url_for('admin.courses') }}">Cursos</a></li>
                                     <li><a class="dropdown-item" href="{{ url_for('admin.rooms') }}">Salas</a></li>
                                     <li><hr class="dropdown-divider"></li>
-                                    <li><a class="dropdown-item" href="{{ url_for('admin.schedule') }}">Agenda</a></li>
-                                    <li><a class="dropdown-item" href="{{ url_for('admin.finances') }}">
-                                    <i class="fas fa-dollar-sign"></i> Financeiro
+                                    <li><a class="dropdown-item" href="{{ url_for('admin.schedule') }}">
+                                    <i class="fas fa-clock me-2"></i>Horários
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ url_for('admin.calendar') }}">
+                                    <i class="fas fa-calendar-alt me-2"></i>Calendário
                                 </a>
                             </li>
                             <li class="nav-item dropdown">

@@ -22,6 +22,169 @@
                 <h6>Pagamentos Realizados</h6>
                 <h4 class="text-success">
                     {% set paid_count = payments|selectattr('0.status', 'equalto', 'paid')|list|length %}
+
+
+<div class="row mb-3">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center">
+            <div class="btn-group">
+                <button class="btn btn-primary" onclick="generateMonthlyPayments()">
+                    <i class="fas fa-plus-circle me-2"></i>Gerar Mensalidades
+                </button>
+                <a href="{{ url_for('admin.export_report', report_type='payments') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-download me-2"></i>Exportar CSV
+                </a>
+                <button class="btn btn-outline-info" onclick="sendPaymentReminders()">
+                    <i class="fas fa-bell me-2"></i>Enviar Lembretes
+                </button>
+            </div>
+            <div class="btn-group">
+                <a href="{{ url_for('admin.add_payment') }}" class="btn btn-success">
+                    <i class="fas fa-plus me-2"></i>Novo Pagamento
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para gerar mensalidades -->
+<div class="modal fade" id="generatePaymentsModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Gerar Mensalidades</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="generatePaymentsForm">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Mês</label>
+                                <select class="form-select" id="paymentMonth" required>
+                                    {% for i in range(1, 13) %}
+                                        <option value="{{ i }}"{% if i == date.today().month %} selected{% endif %}>
+                                            {{ [
+                                                '', 'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+                                                'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
+                                            ][i] }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Ano</label>
+                                <select class="form-select" id="paymentYear" required>
+                                    {% for year in range(date.today().year - 1, date.today().year + 2) %}
+                                        <option value="{{ year }}"{% if year == date.today().year %} selected{% endif %}>{{ year }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        Serão criadas mensalidades para todos os alunos com matrícula ativa, 
+                        com vencimento para o dia 10 do mês selecionado.
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" onclick="confirmGeneratePayments()">
+                    <i class="fas fa-check me-2"></i>Gerar Mensalidades
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function generateMonthlyPayments() {
+    $('#generatePaymentsModal').modal('show');
+}
+
+function confirmGeneratePayments() {
+    const month = document.getElementById('paymentMonth').value;
+    const year = document.getElementById('paymentYear').value;
+    
+    fetch('/admin/generate-monthly-payments', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ month: parseInt(month), year: parseInt(year) })
+    })
+    .then(response => response.json())
+    .then(data => {
+        $('#generatePaymentsModal').modal('hide');
+        
+        if (data.success) {
+            Swal.fire({
+                icon: 'success',
+                title: 'Mensalidades Geradas!',
+                text: data.message,
+                confirmButtonText: 'OK'
+            }).then(() => {
+                window.location.reload();
+            });
+        } else {
+            Swal.fire({
+                icon: 'error',
+                title: 'Erro!',
+                text: data.error,
+                confirmButtonText: 'OK'
+            });
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        Swal.fire({
+            icon: 'error',
+            title: 'Erro!',
+            text: 'Erro ao gerar mensalidades',
+            confirmButtonText: 'OK'
+        });
+    });
+}
+
+function sendPaymentReminders() {
+    fetch('/admin/send-payment-reminders', {
+        method: 'POST'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            Swal.fire({
+                icon: 'success',
+                title: 'Lembretes Enviados!',
+                text: data.message,
+                confirmButtonText: 'OK'
+            });
+        } else {
+            Swal.fire({
+                icon: 'error',
+                title: 'Erro!',
+                text: data.error,
+                confirmButtonText: 'OK'
+            });
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        Swal.fire({
+            icon: 'error',
+            title: 'Erro!',
+            text: 'Erro ao enviar lembretes',
+            confirmButtonText: 'OK'
+        });
+    });
+}
+</script>
+
+
                     {{ paid_count }}
                 </h4>
             </div>
