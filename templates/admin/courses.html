@@ -73,15 +73,15 @@
                                     </td>
                                     <td>
                                         <div class="btn-group btn-group-sm" role="group">
-                                            <button class="btn btn-outline-primary" title="Editar">
+                                            <a href="{{ url_for('admin.edit_course', course_id=course.id) }}" class="btn btn-outline-primary" title="Editar">
                                                 <i class="fas fa-edit"></i>
-                                            </button>
-                                            <button class="btn btn-outline-info" title="Ver Alunos">
+                                            </a>
+                                            <a href="{{ url_for('admin.course_students', course_id=course.id) }}" class="btn btn-outline-info" title="Ver Alunos">
                                                 <i class="fas fa-users"></i>
-                                            </button>
-                                            <button class="btn btn-outline-warning" title="Materiais">
+                                            </a>
+                                            <a href="{{ url_for('admin.course_materials', course_id=course.id) }}" class="btn btn-outline-warning" title="Materiais">
                                                 <i class="fas fa-folder"></i>
-                                            </button>
+                                            </a>
                                         </div>
                                     </td>
                                 </tr>

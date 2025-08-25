@@ -1,0 +1,209 @@
+{% extends "base.html" %}
+
+{% block title %}Detalhes do Aluno - Escola Sol Maior{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mt-4 mb-4">
+            <h1><i class="fas fa-user me-2"></i>{{ user.full_name }}</h1>
+            <div>
+                <a href="{{ url_for('admin.edit_student', student_id=student.id) }}" class="btn btn-warning">
+                    <i class="fas fa-edit me-2"></i>Editar
+                </a>
+                <a href="{{ url_for('admin.students') }}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left me-2"></i>Voltar
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-info-circle me-2"></i>Informações Pessoais</h5>
+            </div>
+            <div class="card-body">
+                <table class="table table-borderless">
+                    <tr>
+                        <td><strong>Nome:</strong></td>
+                        <td>{{ user.full_name }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>E-mail:</strong></td>
+                        <td>{{ user.email }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Telefone:</strong></td>
+                        <td>{{ user.phone|phone }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Data de Nascimento:</strong></td>
+                        <td>{{ student.birth_date|date_br if student.birth_date else '-' }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Data de Registro:</strong></td>
+                        <td>{{ student.registration_date|date_br }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Status:</strong></td>
+                        <td>
+                            {% if user.is_active %}
+                                <span class="badge bg-success">Ativo</span>
+                            {% else %}
+                                <span class="badge bg-danger">Inativo</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-user-friends me-2"></i>Contatos de Emergência</h5>
+            </div>
+            <div class="card-body">
+                <table class="table table-borderless">
+                    <tr>
+                        <td><strong>Contato de Emergência:</strong></td>
+                        <td>{{ student.emergency_contact or '-' }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Telefone de Emergência:</strong></td>
+                        <td>{{ student.emergency_phone|phone if student.emergency_phone else '-' }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Responsável:</strong></td>
+                        <td>{{ student.guardian_name or '-' }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Telefone do Responsável:</strong></td>
+                        <td>{{ student.guardian_phone|phone if student.guardian_phone else '-' }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>E-mail do Responsável:</strong></td>
+                        <td>{{ student.guardian_email or '-' }}</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-book me-2"></i>Matrículas</h5>
+            </div>
+            <div class="card-body">
+                {% if enrollments %}
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Curso</th>
+                                    <th>Status</th>
+                                    <th>Matrícula</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for enrollment in enrollments %}
+                                <tr>
+                                    <td>{{ enrollment.course.name }}</td>
+                                    <td>
+                                        <span class="badge bg-{{ 'success' if enrollment.status == 'active' else 'secondary' }}">
+                                            {{ enrollment.status.title() }}
+                                        </span>
+                                    </td>
+                                    <td>{{ enrollment.enrollment_date|date_br }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <p class="text-muted">Nenhuma matrícula encontrada.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-dollar-sign me-2"></i>Pagamentos Recentes</h5>
+            </div>
+            <div class="card-body">
+                {% if payments %}
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Valor</th>
+                                    <th>Vencimento</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for payment in payments[:5] %}
+                                <tr>
+                                    <td>{{ payment.amount|currency }}</td>
+                                    <td>{{ payment.due_date|date_br }}</td>
+                                    <td>
+                                        <span class="badge bg-{{ 'success' if payment.status == 'paid' else 'warning' if payment.status == 'pending' else 'danger' }}">
+                                            {{ payment.status.title() }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <p class="text-muted">Nenhum pagamento encontrado.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if student.address or student.medical_info or student.notes %}
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-clipboard me-2"></i>Informações Adicionais</h5>
+            </div>
+            <div class="card-body">
+                {% if student.address %}
+                    <div class="mb-3">
+                        <strong>Endereço:</strong>
+                        <p>{{ student.address }}</p>
+                    </div>
+                {% endif %}
+                
+                {% if student.medical_info %}
+                    <div class="mb-3">
+                        <strong>Informações Médicas:</strong>
+                        <p>{{ student.medical_info }}</p>
+                    </div>
+                {% endif %}
+                
+                {% if student.notes %}
+                    <div class="mb-3">
+                        <strong>Observações:</strong>
+                        <p>{{ student.notes }}</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

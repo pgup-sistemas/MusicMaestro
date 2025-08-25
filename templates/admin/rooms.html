@@ -59,15 +59,12 @@
                                     </td>
                                     <td>
                                         <div class="btn-group btn-group-sm" role="group">
-                                            <button class="btn btn-outline-primary" title="Editar">
+                                            <a href="{{ url_for('admin.edit_room', room_id=room.id) }}" class="btn btn-outline-primary" title="Editar">
                                                 <i class="fas fa-edit"></i>
-                                            </button>
-                                            <button class="btn btn-outline-info" title="Ver Agenda">
+                                            </a>
+                                            <a href="{{ url_for('admin.view_room', room_id=room.id) }}" class="btn btn-outline-info" title="Ver Agenda">
                                                 <i class="fas fa-calendar"></i>
-                                            </button>
-                                            <button class="btn btn-outline-danger" title="Excluir">
-                                                <i class="fas fa-trash"></i>
-                                            </button>
+                                            </a>
                                         </div>
                                     </td>
                                 </tr>

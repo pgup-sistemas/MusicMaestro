@@ -170,6 +170,81 @@ def add_student():
     
     return render_template('admin/student_form.html', form=form, title='Adicionar Aluno')
 
+@admin.route('/student/edit/<int:student_id>', methods=['GET', 'POST'])
+@login_required
+def edit_student(student_id):
+    if current_user.user_type not in ['admin', 'secretary']:
+        flash('Acesso negado.', 'danger')
+        return redirect(url_for('main.index'))
+    
+    student = Student.query.get_or_404(student_id)
+    user = User.query.get_or_404(student.user_id)
+    
+    form = StudentForm(obj=student)
+    # Populate form with user data
+    form.username.data = user.username
+    form.email.data = user.email
+    form.full_name.data = user.full_name
+    form.phone.data = user.phone
+    
+    if form.validate_on_submit():
+        # Update user
+        user.username = form.username.data
+        user.email = form.email.data
+        user.full_name = form.full_name.data
+        user.phone = form.phone.data
+        if form.password.data:
+            user.password_hash = generate_password_hash(form.password.data)
+        
+        # Update student profile
+        student.birth_date = form.birth_date.data
+        student.address = form.address.data
+        student.emergency_contact = form.emergency_contact.data
+        student.emergency_phone = form.emergency_phone.data
+        student.guardian_name = form.guardian_name.data
+        student.guardian_phone = form.guardian_phone.data
+        student.guardian_email = form.guardian_email.data
+        student.medical_info = form.medical_info.data
+        student.notes = form.notes.data
+        
+        db.session.commit()
+        flash('Aluno atualizado com sucesso!', 'success')
+        return redirect(url_for('admin.students'))
+    
+    return render_template('admin/student_form.html', form=form, title='Editar Aluno')
+
+@admin.route('/student/view/<int:student_id>')
+@login_required
+def view_student(student_id):
+    if current_user.user_type not in ['admin', 'secretary']:
+        flash('Acesso negado.', 'danger')
+        return redirect(url_for('main.index'))
+    
+    student = Student.query.get_or_404(student_id)
+    user = User.query.get_or_404(student.user_id)
+    enrollments = Enrollment.query.filter_by(student_id=student.id).all()
+    payments = Payment.query.filter_by(student_id=student.id).order_by(Payment.due_date.desc()).all()
+    
+    return render_template('admin/student_detail.html', student=student, user=user, 
+                         enrollments=enrollments, payments=payments)
+
+@admin.route('/student/toggle/<int:student_id>')
+@login_required
+def toggle_student(student_id):
+    if current_user.user_type not in ['admin', 'secretary']:
+        flash('Acesso negado.', 'danger')
+        return redirect(url_for('main.index'))
+    
+    student = Student.query.get_or_404(student_id)
+    user = User.query.get_or_404(student.user_id)
+    
+    user.is_active = not user.is_active
+    db.session.commit()
+    
+    status = 'ativado' if user.is_active else 'desativado'
+    flash(f'Aluno {status} com sucesso!', 'success')
+    return redirect(url_for('admin.students'))
+
 @admin.route('/teachers')
 @login_required
 def teachers():
@@ -227,6 +302,76 @@ def add_teacher():
     
     return render_template('admin/teacher_form.html', form=form, title='Adicionar Professor')
 
+@admin.route('/teacher/edit/<int:teacher_id>', methods=['GET', 'POST'])
+@login_required
+def edit_teacher(teacher_id):
+    if current_user.user_type not in ['admin', 'secretary']:
+        flash('Acesso negado.', 'danger')
+        return redirect(url_for('main.index'))
+    
+    teacher = Teacher.query.get_or_404(teacher_id)
+    user = User.query.get_or_404(teacher.user_id)
+    
+    form = TeacherForm(obj=teacher)
+    # Populate form with user data
+    form.username.data = user.username
+    form.email.data = user.email
+    form.full_name.data = user.full_name
+    form.phone.data = user.phone
+    
+    if form.validate_on_submit():
+        # Update user
+        user.username = form.username.data
+        user.email = form.email.data
+        user.full_name = form.full_name.data
+        user.phone = form.phone.data
+        if form.password.data:
+            user.password_hash = generate_password_hash(form.password.data)
+        
+        # Update teacher profile
+        teacher.specialization = form.specialization.data
+        teacher.hourly_rate = form.hourly_rate.data
+        teacher.bank_name = form.bank_name.data
+        teacher.bank_agency = form.bank_agency.data
+        teacher.bank_account = form.bank_account.data
+        teacher.pix_key = form.pix_key.data
+        teacher.bio = form.bio.data
+        teacher.qualifications = form.qualifications.data
+        
+        db.session.commit()
+        flash('Professor atualizado com sucesso!', 'success')
+        return redirect(url_for('admin.teachers'))
+    
+    return render_template('admin/teacher_form.html', form=form, title='Editar Professor')
+
+@admin.route('/teacher/view/<int:teacher_id>')
+@login_required
+def view_teacher(teacher_id):
+    if current_user.user_type not in ['admin', 'secretary']:
+        flash('Acesso negado.', 'danger')
+        return redirect(url_for('main.index'))
+    
+    teacher = Teacher.query.get_or_404(teacher_id)
+    user = User.query.get_or_404(teacher.user_id)
+    courses = Course.query.filter_by(teacher_id=teacher.id).all()
+    schedules = Schedule.query.filter_by(teacher_id=teacher.id).all()
+    
+    return render_template('admin/teacher_detail.html', teacher=teacher, user=user,
+                         courses=courses, schedules=schedules)
+
+@admin.route('/teacher/schedule/<int:teacher_id>')
+@login_required
+def teacher_schedule(teacher_id):
+    if current_user.user_type not in ['admin', 'secretary']:
+        flash('Acesso negado.', 'danger')
+        return redirect(url_for('main.index'))
+    
+    teacher = Teacher.query.get_or_404(teacher_id)
+    user = User.query.get_or_404(teacher.user_id)
+    schedules = db.session.query(Schedule, Course, Room).join(Course, Schedule.course_id == Course.id).join(Room, Schedule.room_id == Room.id).filter(Schedule.teacher_id == teacher.id).all()
+    
+    return render_template('admin/teacher_schedule.html', teacher=teacher, user=user, schedules=schedules)
+
 @admin.route('/rooms')
 @login_required
 def rooms():
@@ -261,6 +406,42 @@ def add_room():
         return redirect(url_for('admin.rooms'))
     
     return render_template('admin/room_form.html', form=form, title='Adicionar Sala')
+
+@admin.route('/room/edit/<int:room_id>', methods=['GET', 'POST'])
+@login_required
+def edit_room(room_id):
+    if current_user.user_type not in ['admin', 'secretary']:
+        flash('Acesso negado.', 'danger')
+        return redirect(url_for('main.index'))
+    
+    room = Room.query.get_or_404(room_id)
+    form = RoomForm(obj=room)
+    
+    if form.validate_on_submit():
+        room.name = form.name.data
+        room.capacity = form.capacity.data
+        room.equipment = form.equipment.data
+        room.location = form.location.data
+        room.is_available = form.is_available.data
+        room.notes = form.notes.data
+        
+        db.session.commit()
+        flash('Sala atualizada com sucesso!', 'success')
+        return redirect(url_for('admin.rooms'))
+    
+    return render_template('admin/room_form.html', form=form, title='Editar Sala')
+
+@admin.route('/room/view/<int:room_id>')
+@login_required
+def view_room(room_id):
+    if current_user.user_type not in ['admin', 'secretary']:
+        flash('Acesso negado.', 'danger')
+        return redirect(url_for('main.index'))
+    
+    room = Room.query.get_or_404(room_id)
+    schedules = db.session.query(Schedule, Course, Teacher, User).join(Course, Schedule.course_id == Course.id).join(Teacher, Schedule.teacher_id == Teacher.id).join(User, Teacher.user_id == User.id).filter(Schedule.room_id == room.id).all()
+    
+    return render_template('admin/room_detail.html', room=room, schedules=schedules)
 
 @admin.route('/courses')
 @login_required
@@ -304,6 +485,78 @@ def add_course():
     
     return render_template('admin/course_form.html', form=form, title='Adicionar Curso')
 
+@admin.route('/course/edit/<int:course_id>', methods=['GET', 'POST'])
+@login_required
+def edit_course(course_id):
+    if current_user.user_type not in ['admin', 'secretary']:
+        flash('Acesso negado.', 'danger')
+        return redirect(url_for('main.index'))
+    
+    course = Course.query.get_or_404(course_id)
+    form = CourseForm(obj=course)
+    
+    # Populate teacher choices
+    teachers = db.session.query(Teacher, User).join(User, Teacher.user_id == User.id).all()
+    form.teacher_id.choices = [('0', 'Selecione um professor')] + [(str(t.Teacher.id), t.User.full_name) for t in teachers]
+    
+    if course.teacher_id:
+        form.teacher_id.data = str(course.teacher_id)
+    
+    if form.validate_on_submit():
+        course.name = form.name.data
+        course.description = form.description.data
+        course.instrument = form.instrument.data
+        course.level = form.level.data
+        course.duration_months = form.duration_months.data
+        course.monthly_price = form.monthly_price.data
+        course.max_students = form.max_students.data
+        course.teacher_id = int(form.teacher_id.data) if form.teacher_id.data != '0' else None
+        course.is_active = form.is_active.data
+        
+        db.session.commit()
+        flash('Curso atualizado com sucesso!', 'success')
+        return redirect(url_for('admin.courses'))
+    
+    return render_template('admin/course_form.html', form=form, title='Editar Curso')
+
+@admin.route('/course/view/<int:course_id>')
+@login_required
+def view_course(course_id):
+    if current_user.user_type not in ['admin', 'secretary']:
+        flash('Acesso negado.', 'danger')
+        return redirect(url_for('main.index'))
+    
+    course = Course.query.get_or_404(course_id)
+    enrollments = db.session.query(Enrollment, Student, User).join(Student, Enrollment.student_id == Student.id).join(User, Student.user_id == User.id).filter(Enrollment.course_id == course.id).all()
+    materials = Material.query.filter_by(course_id=course.id).all()
+    schedules = Schedule.query.filter_by(course_id=course.id).all()
+    
+    return render_template('admin/course_detail.html', course=course, enrollments=enrollments, materials=materials, schedules=schedules)
+
+@admin.route('/course/students/<int:course_id>')
+@login_required
+def course_students(course_id):
+    if current_user.user_type not in ['admin', 'secretary']:
+        flash('Acesso negado.', 'danger')
+        return redirect(url_for('main.index'))
+    
+    course = Course.query.get_or_404(course_id)
+    enrollments = db.session.query(Enrollment, Student, User).join(Student, Enrollment.student_id == Student.id).join(User, Student.user_id == User.id).filter(Enrollment.course_id == course.id).all()
+    
+    return render_template('admin/course_students.html', course=course, enrollments=enrollments)
+
+@admin.route('/course/materials/<int:course_id>')
+@login_required
+def course_materials(course_id):
+    if current_user.user_type not in ['admin', 'secretary']:
+        flash('Acesso negado.', 'danger')
+        return redirect(url_for('main.index'))
+    
+    course = Course.query.get_or_404(course_id)
+    materials = Material.query.filter_by(course_id=course.id).all()
+    
+    return render_template('admin/course_materials.html', course=course, materials=materials)
+
 @admin.route('/schedule')
 @login_required
 def schedule():
@@ -314,6 +567,89 @@ def schedule():
     schedules = db.session.query(Schedule, Course, Teacher, User, Room).join(Course, Schedule.course_id == Course.id).join(Teacher, Schedule.teacher_id == Teacher.id).join(User, Teacher.user_id == User.id).join(Room, Schedule.room_id == Room.id).all()
     return render_template('admin/schedule.html', schedules=schedules)
 
+@admin.route('/schedule/add', methods=['GET', 'POST'])
+@login_required
+def add_schedule():
+    if current_user.user_type not in ['admin', 'secretary']:
+        flash('Acesso negado.', 'danger')
+        return redirect(url_for('main.index'))
+    
+    form = ScheduleForm()
+    
+    # Populate choices
+    courses = Course.query.filter_by(is_active=True).all()
+    teachers = db.session.query(Teacher, User).join(User, Teacher.user_id == User.id).all()
+    rooms = Room.query.filter_by(is_available=True).all()
+    
+    form.course_id.choices = [(0, 'Selecione um curso')] + [(c.id, c.name) for c in courses]
+    form.teacher_id.choices = [(0, 'Selecione um professor')] + [(t.Teacher.id, t.User.full_name) for t in teachers]
+    form.room_id.choices = [(0, 'Selecione uma sala')] + [(r.id, r.name) for r in rooms]
+    
+    if form.validate_on_submit():
+        schedule = Schedule(
+            course_id=form.course_id.data,
+            teacher_id=form.teacher_id.data,
+            room_id=form.room_id.data,
+            day_of_week=form.day_of_week.data,
+            start_time=form.start_time.data,
+            end_time=form.end_time.data,
+            is_active=True
+        )
+        db.session.add(schedule)
+        db.session.commit()
+        
+        flash('Horário adicionado com sucesso!', 'success')
+        return redirect(url_for('admin.schedule'))
+    
+    return render_template('admin/schedule_form.html', form=form, title='Adicionar Horário')
+
+@admin.route('/schedule/edit/<int:schedule_id>', methods=['GET', 'POST'])
+@login_required
+def edit_schedule(schedule_id):
+    if current_user.user_type not in ['admin', 'secretary']:
+        flash('Acesso negado.', 'danger')
+        return redirect(url_for('main.index'))
+    
+    schedule = Schedule.query.get_or_404(schedule_id)
+    form = ScheduleForm(obj=schedule)
+    
+    # Populate choices
+    courses = Course.query.filter_by(is_active=True).all()
+    teachers = db.session.query(Teacher, User).join(User, Teacher.user_id == User.id).all()
+    rooms = Room.query.filter_by(is_available=True).all()
+    
+    form.course_id.choices = [(0, 'Selecione um curso')] + [(c.id, c.name) for c in courses]
+    form.teacher_id.choices = [(0, 'Selecione um professor')] + [(t.Teacher.id, t.User.full_name) for t in teachers]
+    form.room_id.choices = [(0, 'Selecione uma sala')] + [(r.id, r.name) for r in rooms]
+    
+    if form.validate_on_submit():
+        schedule.course_id = form.course_id.data
+        schedule.teacher_id = form.teacher_id.data
+        schedule.room_id = form.room_id.data
+        schedule.day_of_week = form.day_of_week.data
+        schedule.start_time = form.start_time.data
+        schedule.end_time = form.end_time.data
+        
+        db.session.commit()
+        flash('Horário atualizado com sucesso!', 'success')
+        return redirect(url_for('admin.schedule'))
+    
+    return render_template('admin/schedule_form.html', form=form, title='Editar Horário')
+
+@admin.route('/schedule/delete/<int:schedule_id>')
+@login_required
+def delete_schedule(schedule_id):
+    if current_user.user_type not in ['admin', 'secretary']:
+        flash('Acesso negado.', 'danger')
+        return redirect(url_for('main.index'))
+    
+    schedule = Schedule.query.get_or_404(schedule_id)
+    schedule.is_active = False
+    db.session.commit()
+    
+    flash('Horário removido com sucesso!', 'success')
+    return redirect(url_for('admin.schedule'))
+
 @admin.route('/finances')
 @login_required
 def finances():
@@ -323,6 +659,96 @@ def finances():
     
     payments = db.session.query(Payment, Student, User).join(Student, Payment.student_id == Student.id).join(User, Student.user_id == User.id).all()
     return render_template('admin/finances.html', payments=payments)
+
+@admin.route('/payment/add', methods=['GET', 'POST'])
+@login_required
+def add_payment():
+    if current_user.user_type not in ['admin', 'secretary']:
+        flash('Acesso negado.', 'danger')
+        return redirect(url_for('main.index'))
+    
+    form = PaymentForm()
+    
+    # Populate student choices
+    students = db.session.query(Student, User).join(User, Student.user_id == User.id).all()
+    form.student_id.choices = [(0, 'Selecione um aluno')] + [(s.Student.id, s.User.full_name) for s in students]
+    
+    if form.validate_on_submit():
+        payment = Payment(
+            student_id=form.student_id.data,
+            amount=form.amount.data,
+            due_date=form.due_date.data,
+            payment_date=form.payment_date.data,
+            status=form.status.data,
+            payment_method=form.payment_method.data,
+            reference_month=form.reference_month.data,
+            notes=form.notes.data
+        )
+        db.session.add(payment)
+        db.session.commit()
+        
+        flash('Pagamento registrado com sucesso!', 'success')
+        return redirect(url_for('admin.finances'))
+    
+    return render_template('admin/payment_form.html', form=form, title='Registrar Pagamento')
+
+@admin.route('/payment/edit/<int:payment_id>', methods=['GET', 'POST'])
+@login_required
+def edit_payment(payment_id):
+    if current_user.user_type not in ['admin', 'secretary']:
+        flash('Acesso negado.', 'danger')
+        return redirect(url_for('main.index'))
+    
+    payment = Payment.query.get_or_404(payment_id)
+    form = PaymentForm(obj=payment)
+    
+    # Populate student choices
+    students = db.session.query(Student, User).join(User, Student.user_id == User.id).all()
+    form.student_id.choices = [(0, 'Selecione um aluno')] + [(s.Student.id, s.User.full_name) for s in students]
+    
+    if form.validate_on_submit():
+        payment.student_id = form.student_id.data
+        payment.amount = form.amount.data
+        payment.due_date = form.due_date.data
+        payment.payment_date = form.payment_date.data
+        payment.status = form.status.data
+        payment.payment_method = form.payment_method.data
+        payment.reference_month = form.reference_month.data
+        payment.notes = form.notes.data
+        
+        db.session.commit()
+        flash('Pagamento atualizado com sucesso!', 'success')
+        return redirect(url_for('admin.finances'))
+    
+    return render_template('admin/payment_form.html', form=form, title='Editar Pagamento')
+
+@admin.route('/payment/mark-paid/<int:payment_id>')
+@login_required
+def mark_payment_paid(payment_id):
+    if current_user.user_type not in ['admin', 'secretary']:
+        flash('Acesso negado.', 'danger')
+        return redirect(url_for('main.index'))
+    
+    payment = Payment.query.get_or_404(payment_id)
+    payment.status = 'paid'
+    payment.payment_date = datetime.now().date()
+    db.session.commit()
+    
+    flash('Pagamento marcado como pago!', 'success')
+    return redirect(url_for('admin.finances'))
+
+@admin.route('/payment/view/<int:payment_id>')
+@login_required
+def view_payment(payment_id):
+    if current_user.user_type not in ['admin', 'secretary']:
+        flash('Acesso negado.', 'danger')
+        return redirect(url_for('main.index'))
+    
+    payment = Payment.query.get_or_404(payment_id)
+    student = Student.query.get_or_404(payment.student_id)
+    user = User.query.get_or_404(student.user_id)
+    
+    return render_template('admin/payment_detail.html', payment=payment, student=student, user=user)
 
 # Student routes
 @student_bp.route('/dashboard')
