@@ -6,7 +6,7 @@ from werkzeug.security import check_password_hash, generate_password_hash
 from werkzeug.utils import secure_filename
 from sqlalchemy import and_
 from app import db, csrf
-from models import User, Student, Teacher, Room, Course, Enrollment, Schedule, Payment, Material, ExperimentalClass
+from models import User, Student, Teacher, Room, Course, Enrollment, Schedule, Payment, Material, ExperimentalClass, News
 from forms import *
 from utils import send_email, allowed_file
 from audit_logger import AuditLogger
@@ -770,7 +770,11 @@ def teacher_dashboard():
 # Public routes
 @public.route('/')
 def landing():
-    return render_template('public/landing.html')
+    # Get latest 3 public news for homepage
+    featured_news = News.query.filter_by(is_public=True, featured=True).order_by(News.publish_date.desc()).limit(1).all()
+    recent_news = News.query.filter_by(is_public=True).order_by(News.publish_date.desc()).limit(6).all()
+    
+    return render_template('public/landing.html', featured_news=featured_news, recent_news=recent_news)
 
 @public.route('/contact', methods=['GET', 'POST'])
 def contact():
@@ -1984,3 +1988,104 @@ def export_report(report_type):
         current_app.logger.error(f'Export error: {e}')
         flash('Erro ao exportar relatório.', 'danger')
         return redirect(url_for('admin.reports'))
+
+# News management routes
+@admin.route('/news')
+@login_required
+def news_list():
+    if current_user.user_type not in ['admin', 'secretary']:
+        flash('Acesso negado.', 'danger')
+        return redirect(url_for('main.index'))
+    
+    page = request.args.get('page', 1, type=int)
+    category = request.args.get('category', '')
+    
+    query = News.query.order_by(News.created_at.desc())
+    
+    if category:
+        query = query.filter_by(category=category)
+    
+    news = query.paginate(page=page, per_page=20, error_out=False)
+    
+    return render_template('admin/news_list.html', news=news, category=category)
+
+@admin.route('/news/add', methods=['GET', 'POST'])
+@login_required
+def news_add():
+    if current_user.user_type not in ['admin', 'secretary']:
+        flash('Acesso negado.', 'danger')
+        return redirect(url_for('main.index'))
+    
+    form = NewsForm()
+    
+    if form.validate_on_submit():
+        news_article = News(
+            title=form.title.data,
+            summary=form.summary.data,
+            content=form.content.data,
+            category=form.category.data,
+            author_id=current_user.id,
+            featured=form.featured.data,
+            is_public=form.is_public.data,
+            publish_date=form.publish_date.data
+        )
+        
+        db.session.add(news_article)
+        db.session.commit()
+        
+        flash('Notícia criada com sucesso!', 'success')
+        return redirect(url_for('admin.news_list'))
+    
+    return render_template('admin/news_form.html', form=form, title='Nova Notícia')
+
+@admin.route('/news/edit/<int:news_id>', methods=['GET', 'POST'])
+@login_required
+def news_edit(news_id):
+    if current_user.user_type not in ['admin', 'secretary']:
+        flash('Acesso negado.', 'danger')
+        return redirect(url_for('main.index'))
+    
+    news_article = News.query.get_or_404(news_id)
+    form = NewsForm(obj=news_article)
+    
+    if form.validate_on_submit():
+        news_article.title = form.title.data
+        news_article.summary = form.summary.data
+        news_article.content = form.content.data
+        news_article.category = form.category.data
+        news_article.featured = form.featured.data
+        news_article.is_public = form.is_public.data
+        news_article.publish_date = form.publish_date.data
+        news_article.updated_at = datetime.utcnow()
+        
+        db.session.commit()
+        
+        flash('Notícia atualizada com sucesso!', 'success')
+        return redirect(url_for('admin.news_list'))
+    
+    return render_template('admin/news_form.html', form=form, title='Editar Notícia', news=news_article)
+
+@admin.route('/news/delete/<int:news_id>', methods=['POST'])
+@login_required  
+def news_delete(news_id):
+    if current_user.user_type not in ['admin', 'secretary']:
+        flash('Acesso negado.', 'danger')
+        return redirect(url_for('main.index'))
+    
+    news_article = News.query.get_or_404(news_id)
+    
+    db.session.delete(news_article)
+    db.session.commit()
+    
+    flash('Notícia excluída com sucesso!', 'success')
+    return redirect(url_for('admin.news_list'))
+
+@admin.route('/news/view/<int:news_id>')
+@login_required
+def news_view(news_id):
+    if current_user.user_type not in ['admin', 'secretary']:
+        flash('Acesso negado.', 'danger')
+        return redirect(url_for('main.index'))
+        
+    news_article = News.query.get_or_404(news_id)
+    return render_template('admin/news_view.html', news=news_article)

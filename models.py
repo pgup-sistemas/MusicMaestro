@@ -190,6 +190,28 @@ class PaymentTransaction(db.Model):
     # Relacionamento
     payment = db.relationship('Payment', backref='transactions')
 
+class News(db.Model):
+    __tablename__ = 'news'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(200), nullable=False)
+    content = db.Column(db.Text, nullable=False)
+    summary = db.Column(db.Text)
+    category = db.Column(db.String(50), default='announcement')  # event, announcement, news
+    author_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    featured = db.Column(db.Boolean, default=False)
+    is_public = db.Column(db.Boolean, default=True)
+    publish_date = db.Column(db.DateTime, default=datetime.utcnow)
+    views_count = db.Column(db.Integer, default=0)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    def __init__(self, **kwargs):
+        super(News, self).__init__(**kwargs)
+    
+    # Relationship to author
+    author = db.relationship('User', backref='news_articles')
+
 class ExperimentalClass(db.Model):
     __tablename__ = 'experimental_classes'
     

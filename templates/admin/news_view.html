@@ -1,0 +1,185 @@
+{% extends "base.html" %}
+
+{% block title %}{{ news.title }} - Escola Sol Maior{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1 class="mt-4">
+                <i class="fas fa-newspaper me-2"></i>Visualizar Notícia
+            </h1>
+            <div>
+                <a href="{{ url_for('admin.news_edit', news_id=news.id) }}" class="btn btn-warning me-2">
+                    <i class="fas fa-edit me-1"></i>Editar
+                </a>
+                <a href="{{ url_for('admin.news_list') }}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left me-1"></i>Voltar
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <div>
+                        {% if news.category == 'announcement' %}
+                            <span class="badge bg-info mb-2">Aviso</span>
+                        {% elif news.category == 'event' %}
+                            <span class="badge bg-success mb-2">Evento</span>
+                        {% else %}
+                            <span class="badge bg-primary mb-2">Notícia</span>
+                        {% endif %}
+                        
+                        {% if news.featured %}
+                            <span class="badge bg-warning mb-2">Destacada</span>
+                        {% endif %}
+                        
+                        {% if news.is_public %}
+                            <span class="badge bg-success mb-2">Pública</span>
+                        {% else %}
+                            <span class="badge bg-secondary mb-2">Privada</span>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <h2 class="mb-3">{{ news.title }}</h2>
+                
+                {% if news.summary %}
+                <div class="alert alert-info">
+                    <strong>Resumo:</strong> {{ news.summary }}
+                </div>
+                {% endif %}
+                
+                <div class="content mb-4">
+                    {{ news.content|replace('\n', '<br>')|safe }}
+                </div>
+                
+                <div class="row text-muted small">
+                    <div class="col-md-6">
+                        <i class="fas fa-user me-1"></i>
+                        <strong>Autor:</strong> {{ news.author.full_name }}
+                    </div>
+                    <div class="col-md-6">
+                        <i class="fas fa-calendar me-1"></i>
+                        <strong>Publicação:</strong> {{ news.publish_date.strftime('%d/%m/%Y às %H:%M') }}
+                    </div>
+                </div>
+                
+                {% if news.created_at != news.updated_at %}
+                <div class="row text-muted small mt-1">
+                    <div class="col-12">
+                        <i class="fas fa-edit me-1"></i>
+                        <strong>Última atualização:</strong> {{ news.updated_at.strftime('%d/%m/%Y às %H:%M') }}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-chart-bar me-2"></i>Estatísticas
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <span>Visualizações:</span>
+                    <span class="badge bg-primary">{{ news.views_count }}</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card mt-3">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-cogs me-2"></i>Ações
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{{ url_for('admin.news_edit', news_id=news.id) }}" class="btn btn-warning">
+                        <i class="fas fa-edit me-1"></i>Editar Notícia
+                    </a>
+                    
+                    {% if news.is_public %}
+                    <a href="#" class="btn btn-info" onclick="copyToClipboard('{{ request.url_root }}public/news/{{ news.id }}')">
+                        <i class="fas fa-share me-1"></i>Copiar Link Público
+                    </a>
+                    {% endif %}
+                    
+                    <button type="button" class="btn btn-danger" onclick="confirmDelete('{{ news.id }}', '{{ news.title }}')">
+                        <i class="fas fa-trash me-1"></i>Excluir Notícia
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de confirmação de exclusão -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirmar Exclusão</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Tem certeza que deseja excluir a notícia "<span id="newsTitle"></span>"?</p>
+                <p class="text-danger"><strong>Esta ação não pode ser desfeita!</strong></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <form id="deleteForm" method="POST" class="d-inline">
+                    {{ csrf_token() }}
+                    <button type="submit" class="btn btn-danger">Excluir</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function confirmDelete(newsId, newsTitle) {
+    document.getElementById('newsTitle').textContent = newsTitle;
+    document.getElementById('deleteForm').action = '{{ url_for("admin.news_delete", news_id=0) }}'.replace('0', newsId);
+    new bootstrap.Modal(document.getElementById('deleteModal')).show();
+}
+
+function copyToClipboard(text) {
+    navigator.clipboard.writeText(text).then(function() {
+        // Criar toast de sucesso
+        const toast = document.createElement('div');
+        toast.className = 'toast align-items-center text-bg-success border-0 position-fixed top-0 end-0 m-3';
+        toast.style.zIndex = '1055';
+        toast.innerHTML = `
+            <div class="d-flex">
+                <div class="toast-body">
+                    <i class="fas fa-check me-2"></i>Link copiado para a área de transferência!
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+            </div>
+        `;
+        
+        document.body.appendChild(toast);
+        const bsToast = new bootstrap.Toast(toast);
+        bsToast.show();
+        
+        // Remover o toast após esconder
+        toast.addEventListener('hidden.bs.toast', function() {
+            document.body.removeChild(toast);
+        });
+    }).catch(function(err) {
+        alert('Erro ao copiar link: ' + err);
+    });
+}
+</script>
+{% endblock %}

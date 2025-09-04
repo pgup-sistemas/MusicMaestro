@@ -148,12 +148,9 @@ class ExperimentalClassForm(FlaskForm):
         ('intermediate', 'Intermediário'),
         ('advanced', 'Avançado')
     ], validators=[DataRequired()])
-    preferred_time = SelectField('Horário Preferencial', choices=[
-        ('morning', 'Manhã'),
-        ('afternoon', 'Tarde'),
-        ('evening', 'Noite')
-    ])
-    message = TextAreaField('Mensagem Adicional')
+    preferred_date = DateField('Data Preferencial', validators=[Optional()])
+    preferred_time = StringField('Horário Preferencial', validators=[Optional()])
+    notes = TextAreaField('Observações', validators=[Optional()])
     submit = SubmitField('Agendar Aula Experimental')
 
 class EditProfileForm(FlaskForm):
@@ -172,3 +169,17 @@ class ContactForm(FlaskForm):
     phone = StringField('Telefone', validators=[Optional(), Length(max=20)])
     subject = StringField('Assunto', validators=[DataRequired(), Length(max=200)])
     message = TextAreaField('Mensagem', validators=[DataRequired()])
+
+class NewsForm(FlaskForm):
+    title = StringField('Título', validators=[DataRequired(), Length(min=5, max=200)])
+    summary = TextAreaField('Resumo', validators=[Optional(), Length(max=300)])
+    content = TextAreaField('Conteúdo', validators=[DataRequired()])
+    category = SelectField('Categoria', choices=[
+        ('announcement', 'Aviso'),
+        ('event', 'Evento'),
+        ('news', 'Notícia')
+    ], validators=[DataRequired()])
+    featured = BooleanField('Destacar na página inicial')
+    is_public = BooleanField('Visível para o público')
+    publish_date = DateField('Data de publicação', validators=[DataRequired()])
+    submit = SubmitField('Salvar Notícia')
