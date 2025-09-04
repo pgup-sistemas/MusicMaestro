@@ -66,7 +66,7 @@ def create_app():
     csrf.init_app(app)
     
     # Login manager configuration
-    login_manager.login_view = 'auth.login'
+    login_manager.login_view = 'auth.login'  # type: ignore
     login_manager.login_message = 'Por favor, faça login para acessar esta página.'
     login_manager.login_message_category = 'info'
     
