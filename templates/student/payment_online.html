@@ -1,105 +1,60 @@
-
 {% extends "base.html" %}
 
 {% block title %}Pagamento Online - Escola Sol Maior{% endblock %}
 
 {% block content %}
-<div class="row">
-    <div class="col-12">
-        <h1 class="mt-4 mb-4">
-            <i class="fas fa-credit-card me-2"></i>Pagamento Online
-        </h1>
-    </div>
-</div>
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-credit-card me-2"></i>
+                        Pagamento Online
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h5>Detalhes do Pagamento</h5>
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td><strong>Valor:</strong></td>
+                                    <td>R$ {{ "%.2f"|format(payment.amount) }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Vencimento:</strong></td>
+                                    <td>{{ payment.due_date.strftime('%d/%m/%Y') }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Referência:</strong></td>
+                                    <td>{{ payment.reference_month.strftime('%B/%Y') }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Status:</strong></td>
+                                    <td>
+                                        <span class="badge bg-warning">{{ payment.status.title() }}</span>
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <h5>Opções de Pagamento</h5>
+                            <div class="d-grid gap-2">
+                                <a href="{{ url_for('main.create_payment', payment_id=payment.id) }}"
+                                   class="btn btn-success btn-lg">
+                                    <i class="fab fa-paypal me-2"></i>
+                                    Pagar com Mercado Pago
+                                </a>
 
-<div class="row">
-    <div class="col-md-8">
-        <div class="card">
-            <div class="card-header">
-                <h5><i class="fas fa-money-bill me-2"></i>Detalhes do Pagamento</h5>
-            </div>
-            <div class="card-body">
-                <div class="row mb-3">
-                    <div class="col-md-6">
-                        <p><strong>Valor:</strong> <span class="h4 text-primary">{{ payment.amount|currency }}</span></p>
-                    </div>
-                    <div class="col-md-6">
-                        <p><strong>Vencimento:</strong> {{ payment.due_date|date_br }}</p>
-                    </div>
-                </div>
-                <div class="row mb-3">
-                    <div class="col-md-6">
-                        <p><strong>Referência:</strong> {{ payment.reference_month.strftime('%m/%Y') }}</p>
-                    </div>
-                    <div class="col-md-6">
-                        <p><strong>Status:</strong> 
-                            {% if payment.status == 'pending' %}
-                                <span class="badge bg-warning">Pendente</span>
-                            {% elif payment.status == 'overdue' %}
-                                <span class="badge bg-danger">Vencido</span>
-                            {% endif %}
-                        </p>
-                    </div>
-                </div>
-                
-                <hr>
-                
-                <h6><i class="fas fa-credit-card me-2"></i>Escolha a forma de pagamento:</h6>
-                
-                <div class="row mt-3">
-                    <div class="col-md-6">
-                        <div class="card border-primary mb-3">
-                            <div class="card-body text-center">
-                                <i class="fas fa-qrcode fa-3x text-primary mb-3"></i>
-                                <h5>PIX</h5>
-                                <p class="text-muted">Pagamento instantâneo</p>
-                                <button class="btn btn-primary" onclick="generatePix({{ payment.id }})">
-                                    <i class="fas fa-qrcode me-2"></i>Gerar PIX
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="col-md-6">
-                        <div class="card border-success mb-3">
-                            <div class="card-body text-center">
-                                <i class="fas fa-credit-card fa-3x text-success mb-3"></i>
-                                <h5>Cartão de Crédito</h5>
-                                <p class="text-muted">Parcelamento disponível</p>
-                                <button class="btn btn-success" onclick="openCreditCardForm()">
-                                    <i class="fas fa-credit-card me-2"></i>Pagar com Cartão
+                                <button type="button" class="btn btn-primary" onclick="generatePix({{ payment.id }})">
+                                    <i class="fas fa-qrcode me-2"></i>
+                                    Gerar PIX
                                 </button>
                             </div>
                         </div>
                     </div>
                 </div>
-            </div>
-        </div>
-    </div>
-    
-    <div class="col-md-4">
-        <div class="card">
-            <div class="card-header">
-                <h6><i class="fas fa-info-circle me-2"></i>Informações</h6>
-            </div>
-            <div class="card-body">
-                <p class="small">
-                    <i class="fas fa-shield-alt text-success me-2"></i>
-                    <strong>Pagamento Seguro</strong><br>
-                    Seus dados são protegidos com criptografia SSL.
-                </p>
-                
-                <p class="small">
-                    <i class="fas fa-clock text-info me-2"></i>
-                    <strong>PIX Instantâneo</strong><br>
-                    O pagamento via PIX é processado imediatamente.
-                </p>
-                
-                <p class="small">
-                    <i class="fas fa-envelope text-warning me-2"></i>
-                    <strong>Confirmação</strong><br>
-                    Você receberá um e-mail de confirmação após o pagamento.
-                </p>
             </div>
         </div>
     </div>
@@ -110,17 +65,15 @@
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">
-                    <i class="fas fa-qrcode me-2"></i>Pagamento PIX
-                </h5>
+                <h5 class="modal-title">Pagamento PIX</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body text-center">
-                <div id="pixContent">
-                    <div class="spinner-border text-primary" role="status">
-                        <span class="visually-hidden">Gerando PIX...</span>
+            <div class="modal-body" id="pixContent">
+                <div class="text-center">
+                    <div class="spinner-border" role="status">
+                        <span class="visually-hidden">Carregando...</span>
                     </div>
-                    <p class="mt-2">Gerando código PIX...</p>
+                    <p>Gerando código PIX...</p>
                 </div>
             </div>
             <div class="modal-footer">
@@ -130,117 +83,38 @@
     </div>
 </div>
 
-<!-- Modal Cartão -->
-<div class="modal fade" id="creditCardModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">
-                    <i class="fas fa-credit-card me-2"></i>Pagamento com Cartão
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <form id="creditCardForm">
-                    <div class="mb-3">
-                        <label class="form-label">Número do Cartão</label>
-                        <input type="text" class="form-control" id="cardNumber" placeholder="0000 0000 0000 0000" maxlength="19">
-                    </div>
-                    <div class="row">
-                        <div class="col-md-8">
-                            <div class="mb-3">
-                                <label class="form-label">Nome no Cartão</label>
-                                <input type="text" class="form-control" id="cardName" placeholder="Nome como no cartão">
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="mb-3">
-                                <label class="form-label">CVV</label>
-                                <input type="text" class="form-control" id="cardCvv" placeholder="123" maxlength="4">
-                            </div>
-                        </div>
-                    </div>
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label class="form-label">Mês</label>
-                                <select class="form-select" id="cardMonth">
-                                    <option value="">Mês</option>
-                                    {% for i in range(1, 13) %}
-                                        <option value="{{ '%02d'|format(i) }}">{{ '%02d'|format(i) }}</option>
-                                    {% endfor %}
-                                </select>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label class="form-label">Ano</label>
-                                <select class="form-select" id="cardYear">
-                                    <option value="">Ano</option>
-                                    {% for year in range(2024, 2035) %}
-                                        <option value="{{ year }}">{{ year }}</option>
-                                    {% endfor %}
-                                </select>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Parcelas</label>
-                        <select class="form-select" id="installments">
-                            <option value="1">À vista</option>
-                            <option value="2">2x sem juros</option>
-                            <option value="3">3x sem juros</option>
-                            <option value="4">4x sem juros</option>
-                            <option value="5">5x sem juros</option>
-                            <option value="6">6x sem juros</option>
-                        </select>
-                    </div>
-                </form>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                <button type="button" class="btn btn-success" onclick="processCreditCard()">
-                    <i class="fas fa-credit-card me-2"></i>Pagar
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-
 <script>
 function generatePix(paymentId) {
     $('#pixModal').modal('show');
-    
+
     fetch(`/admin/payment/${paymentId}/create-pix`)
         .then(response => response.json())
         .then(data => {
             if (data.success) {
                 $('#pixContent').html(`
-                    <div class="mb-3">
+                    <div class="text-center mb-3">
                         <img src="data:image/png;base64,${data.qr_code}" class="img-fluid" style="max-width: 300px;">
                     </div>
                     <div class="mb-3">
-                        <p><strong>Código PIX:</strong></p>
+                        <p><strong>Código PIX para cópia:</strong></p>
                         <div class="input-group">
                             <input type="text" class="form-control" value="${data.pix_code}" id="pixCode" readonly>
-                            <button class="btn btn-outline-primary" onclick="copyPixCode()">
+                            <button class="btn btn-outline-secondary" onclick="copyPixCode()">
                                 <i class="fas fa-copy"></i> Copiar
                             </button>
                         </div>
                     </div>
-                    <p class="text-muted small">
-                        <i class="fas fa-clock me-1"></i>
-                        Este código expira em 1 hora
-                    </p>
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i>
+                        Escaneie o QR Code ou copie e cole o código PIX no seu banco.
+                        <br><strong>Válido até:</strong> ${new Date(data.expires_at).toLocaleString('pt-BR')}
+                    </div>
                 `);
-                
-                // Verificar status do pagamento a cada 5 segundos
-                checkPaymentStatus(paymentId);
             } else {
                 $('#pixContent').html(`
                     <div class="alert alert-danger">
-                        <i class="fas fa-exclamation-triangle me-2"></i>
-                        ${data.error}
+                        <i class="fas fa-exclamation-triangle"></i>
+                        Erro ao gerar PIX: ${data.error}
                     </div>
                 `);
             }
@@ -248,8 +122,8 @@ function generatePix(paymentId) {
         .catch(error => {
             $('#pixContent').html(`
                 <div class="alert alert-danger">
-                    <i class="fas fa-exclamation-triangle me-2"></i>
-                    Erro ao gerar PIX. Tente novamente.
+                    <i class="fas fa-exclamation-triangle"></i>
+                    Erro de conexão. Tente novamente.
                 </div>
             `);
         });
@@ -258,54 +132,19 @@ function generatePix(paymentId) {
 function copyPixCode() {
     const pixCode = document.getElementById('pixCode');
     pixCode.select();
-    document.execCommand('copy');
-    
+    pixCode.setSelectionRange(0, 99999);
+    navigator.clipboard.writeText(pixCode.value);
+
     // Feedback visual
     const button = event.target.closest('button');
-    const originalText = button.innerHTML;
+    const originalHTML = button.innerHTML;
     button.innerHTML = '<i class="fas fa-check"></i> Copiado!';
-    button.classList.remove('btn-outline-primary');
     button.classList.add('btn-success');
-    
+
     setTimeout(() => {
-        button.innerHTML = originalText;
+        button.innerHTML = originalHTML;
         button.classList.remove('btn-success');
-        button.classList.add('btn-outline-primary');
     }, 2000);
-}
-
-function checkPaymentStatus(paymentId) {
-    const interval = setInterval(() => {
-        fetch(`/admin/payment/${paymentId}/status`)
-            .then(response => response.json())
-            .then(data => {
-                if (data.status === 'paid') {
-                    clearInterval(interval);
-                    $('#pixModal').modal('hide');
-                    
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Pagamento Confirmado!',
-                        text: 'Seu pagamento foi processado com sucesso.',
-                        confirmButtonText: 'OK'
-                    }).then(() => {
-                        window.location.reload();
-                    });
-                }
-            });
-    }, 5000);
-    
-    // Parar verificação após 1 hora
-    setTimeout(() => clearInterval(interval), 3600000);
-}
-
-function openCreditCardForm() {
-    $('#creditCardModal').modal('show');
-}
-
-function processCreditCard() {
-    // Implementar processamento de cartão
-    alert('Funcionalidade de cartão em desenvolvimento');
 }
 </script>
 {% endblock %}
