@@ -177,13 +177,25 @@ class PaymentTransaction(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     payment_id = db.Column(db.Integer, db.ForeignKey('payments.id'), nullable=False)
     transaction_id = db.Column(db.String(100), unique=True, nullable=False)
-    payment_method = db.Column(db.String(50), nullable=False)  # PIX, CREDIT_CARD, BOLETO
+    payment_method = db.Column(db.String(50), nullable=False)  # PIX, CREDIT_CARD, BOLETO, DEBIT_CARD
     amount = db.Column(db.Numeric(10, 2), nullable=False)
-    status = db.Column(db.String(20), default='pending')  # pending, completed, failed, expired
+    status = db.Column(db.String(20), default='pending')  # pending, approved, rejected, cancelled, in_process, in_mediation, refunded
     gateway_data = db.Column(db.Text)  # JSON com dados do gateway
     pix_code = db.Column(db.Text)  # Código PIX se aplicável
     pix_qr_code = db.Column(db.Text)  # QR Code PIX se aplicável
     expires_at = db.Column(db.DateTime)
+    
+    # Campos específicos do Mercado Pago
+    mp_preference_id = db.Column(db.String(100))  # ID da preferência MP
+    mp_payment_id = db.Column(db.String(100))     # ID do pagamento MP
+    mp_payment_url = db.Column(db.Text)           # URL de pagamento
+    mp_init_point = db.Column(db.Text)            # Sandbox init point
+    mp_sandbox_init_point = db.Column(db.Text)    # Sandbox init point
+    
+    # Informações adicionais
+    installments = db.Column(db.Integer, default=1)
+    external_reference = db.Column(db.String(100))  # Referência externa
+    
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     completed_at = db.Column(db.DateTime)
     

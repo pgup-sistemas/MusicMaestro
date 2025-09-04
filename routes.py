@@ -6,7 +6,8 @@ from werkzeug.security import check_password_hash, generate_password_hash
 from werkzeug.utils import secure_filename
 from sqlalchemy import and_
 from app import db, csrf
-from models import User, Student, Teacher, Room, Course, Enrollment, Schedule, Payment, Material, ExperimentalClass, News
+from models import User, Student, Teacher, Room, Course, Enrollment, Schedule, Payment, Material, ExperimentalClass, News, PaymentTransaction
+from mercado_pago import mp_api
 from forms import *
 from utils import send_email, allowed_file
 from audit_logger import AuditLogger
@@ -942,34 +943,6 @@ def pay_online(payment_id):
 
     return render_template('student/payment_online.html', payment=payment)
 
-@main.route('/payment-webhook', methods=['POST'])
-def payment_webhook():
-    """
-    Webhook para receber notificações do gateway de pagamento
-    """
-    try:
-        data = request.get_json()
-
-        transaction_id = data.get('transaction_id')
-        status = data.get('status')
-        paid_amount = data.get('amount')
-
-        from payment_gateway import PaymentProcessor
-
-        success = PaymentProcessor.process_payment_confirmation(
-            transaction_id=transaction_id,
-            status=status,
-            paid_amount=paid_amount
-        )
-
-        if success:
-            return jsonify({'status': 'ok'}), 200
-        else:
-            return jsonify({'status': 'error'}), 400
-
-    except Exception as e:
-        current_app.logger.error(f'Webhook error: {e}')
-        return jsonify({'status': 'error'}), 500
 
 @admin.route('/send-payment-reminders', methods=['POST'])
 @login_required
@@ -2138,3 +2111,195 @@ def news_view(news_id):
         
     news_article = News.query.get_or_404(news_id)
     return render_template('admin/news_view.html', news=news_article)
+
+# ==========================================
+# ROTAS DE PAGAMENTO - MERCADO PAGO
+# ==========================================
+
+@main.route('/payment/create/<int:payment_id>')
+@login_required
+def create_payment(payment_id):
+    """
+    Cria uma preferência de pagamento no Mercado Pago
+    """
+    payment = Payment.query.get_or_404(payment_id)
+    
+    # Verificar se o usuário pode acessar este pagamento
+    if current_user.user_type == 'student':
+        student = Student.query.filter_by(user_id=current_user.id).first()
+        if not student or payment.student_id != student.id:
+            flash('Acesso negado.', 'danger')
+            return redirect(url_for('main.index'))
+    
+    try:
+        # Criar item para o Mercado Pago
+        items = [{
+            "title": f"Mensalidade - {payment.reference_month.strftime('%m/%Y')}",
+            "description": f"Pagamento da mensalidade referente a {payment.reference_month.strftime('%B/%Y')}",
+            "category_id": "education",
+            "quantity": 1,
+            "unit_price": float(payment.amount),
+            "currency_id": "BRL"
+        }]
+        
+        # Informações do pagador
+        student = Student.query.get(payment.student_id)
+        payer_info = {
+            "name": student.name,
+            "surname": "",
+            "email": student.email,
+            "phone": {
+                "area_code": "11",
+                "number": student.phone.replace("(", "").replace(")", "").replace("-", "").replace(" ", "")[:9] if student.phone else "999999999"
+            }
+        }
+        
+        # Criar preferência no Mercado Pago
+        preference_data = mp_api.create_preference(items, payer_info)
+        
+        # Salvar transação no banco
+        transaction = PaymentTransaction(
+            payment_id=payment.id,
+            transaction_id=preference_data['id'],
+            payment_method='MERCADO_PAGO',
+            amount=payment.amount,
+            status='pending',
+            mp_preference_id=preference_data['id'],
+            mp_init_point=preference_data.get('init_point'),
+            mp_sandbox_init_point=preference_data.get('sandbox_init_point'),
+            external_reference=f"payment_{payment.id}",
+            gateway_data=json.dumps(preference_data)
+        )
+        
+        db.session.add(transaction)
+        db.session.commit()
+        
+        # Redirecionar para o Mercado Pago (sandbox para desenvolvimento)
+        payment_url = preference_data.get('sandbox_init_point', preference_data.get('init_point'))
+        return redirect(payment_url)
+        
+    except Exception as e:
+        current_app.logger.error(f"Erro ao criar pagamento MP: {e}")
+        flash('Erro ao processar pagamento. Tente novamente.', 'danger')
+        return redirect(url_for('student.student_dashboard'))
+
+@main.route('/payment/success')
+def payment_success():
+    """
+    Página de sucesso do pagamento
+    """
+    payment_id = request.args.get('external_reference', '').replace('payment_', '')
+    mp_payment_id = request.args.get('payment_id')
+    
+    if payment_id and mp_payment_id:
+        try:
+            # Buscar informações do pagamento no MP
+            payment_info = mp_api.get_payment_info(mp_payment_id)
+            
+            # Atualizar transação
+            transaction = PaymentTransaction.query.filter_by(
+                external_reference=f"payment_{payment_id}"
+            ).first()
+            
+            if transaction:
+                transaction.mp_payment_id = mp_payment_id
+                transaction.status = payment_info.get('status', 'pending')
+                transaction.gateway_data = json.dumps(payment_info)
+                
+                if payment_info.get('status') == 'approved':
+                    transaction.completed_at = datetime.utcnow()
+                    # Atualizar status do pagamento principal
+                    transaction.payment.status = 'paid'
+                    transaction.payment.payment_date = date.today()
+                    transaction.payment.payment_method = 'Mercado Pago'
+                
+                db.session.commit()
+            
+        except Exception as e:
+            current_app.logger.error(f"Erro ao processar sucesso do pagamento: {e}")
+    
+    return render_template('payment/success.html', 
+                         payment_id=payment_id, 
+                         mp_payment_id=mp_payment_id)
+
+@main.route('/payment/failure')
+def payment_failure():
+    """
+    Página de falha no pagamento
+    """
+    return render_template('payment/failure.html')
+
+@main.route('/payment/pending')
+def payment_pending():
+    """
+    Página de pagamento pendente
+    """
+    return render_template('payment/pending.html')
+
+@main.route('/payment/webhook', methods=['POST'])
+@csrf.exempt
+def payment_webhook():
+    """
+    Webhook do Mercado Pago para notificações de pagamento
+    """
+    try:
+        notification_data = request.get_json()
+        current_app.logger.info(f"Webhook MP recebido: {notification_data}")
+        
+        payment_info = mp_api.process_webhook_notification(notification_data)
+        
+        if payment_info:
+            # Buscar transação pelo payment_id do MP
+            mp_payment_id = str(payment_info.get('id'))
+            transaction = PaymentTransaction.query.filter_by(
+                mp_payment_id=mp_payment_id
+            ).first()
+            
+            if not transaction:
+                # Buscar pela referência externa
+                external_ref = payment_info.get('external_reference', '')
+                transaction = PaymentTransaction.query.filter_by(
+                    external_reference=external_ref
+                ).first()
+            
+            if transaction:
+                transaction.mp_payment_id = mp_payment_id
+                transaction.status = payment_info.get('status', 'pending')
+                transaction.gateway_data = json.dumps(payment_info)
+                
+                if payment_info.get('status') == 'approved':
+                    transaction.completed_at = datetime.utcnow()
+                    # Atualizar pagamento principal
+                    transaction.payment.status = 'paid'
+                    transaction.payment.payment_date = date.today()
+                    transaction.payment.payment_method = 'Mercado Pago'
+                    
+                    # Enviar notificação por email
+                    try:
+                        student = Student.query.get(transaction.payment.student_id)
+                        send_email(
+                            subject='Pagamento Aprovado - Escola Sol Maior',
+                            body=f'''
+                            Olá {student.name},
+                            
+                            Seu pagamento foi aprovado com sucesso!
+                            
+                            Valor: R$ {transaction.amount}
+                            Referência: {transaction.payment.reference_month.strftime('%B/%Y')}
+                            ID da Transação: {mp_payment_id}
+                            
+                            Obrigado por escolher a Escola Sol Maior!
+                            ''',
+                            recipients=[student.email]
+                        )
+                    except Exception as e:
+                        current_app.logger.error(f'Erro ao enviar email de confirmação: {e}')
+                
+                db.session.commit()
+                current_app.logger.info(f"Transação atualizada: {transaction.id}")
+        
+        return {'status': 'success'}, 200
+        
+    except Exception as e:
+        current_app.logger.error(f"Erro no webhook MP: {e}")
+        return {'status': 'error'}, 400

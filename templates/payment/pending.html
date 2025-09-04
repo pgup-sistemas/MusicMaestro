@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block title %}Pagamento Pendente - Escola Sol Maior{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card border-warning">
+                <div class="card-body text-center py-5">
+                    <div class="mb-4">
+                        <i class="fas fa-clock text-warning" style="font-size: 4rem;"></i>
+                    </div>
+                    
+                    <h2 class="text-warning mb-4">Pagamento Pendente</h2>
+                    
+                    <div class="alert alert-warning" role="alert">
+                        <h5 class="alert-heading">Aguardando Confirmação</h5>
+                        <p class="mb-0">Seu pagamento está sendo processado.</p>
+                    </div>
+                    
+                    <p class="text-muted mb-4">
+                        Para pagamentos PIX, a confirmação é quase instantânea.<br>
+                        Para boletos, pode levar até 2 dias úteis.<br>
+                        Para cartão de crédito, geralmente é aprovado em alguns minutos.<br><br>
+                        Você receberá um email assim que o pagamento for confirmado.
+                    </p>
+                    
+                    <div class="d-grid gap-2">
+                        {% if current_user.user_type == 'student' %}
+                        <a href="{{ url_for('student.student_dashboard') }}" class="btn btn-primary">
+                            <i class="fas fa-home me-2"></i>Voltar ao Painel
+                        </a>
+                        {% else %}
+                        <a href="{{ url_for('main.index') }}" class="btn btn-primary">
+                            <i class="fas fa-home me-2"></i>Página Inicial
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+
+{% block title %}Pagamento Aprovado - Escola Sol Maior{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card border-success">
+                <div class="card-body text-center py-5">
+                    <div class="mb-4">
+                        <i class="fas fa-check-circle text-success" style="font-size: 4rem;"></i>
+                    </div>
+                    
+                    <h2 class="text-success mb-4">Pagamento Aprovado!</h2>
+                    
+                    <div class="alert alert-success" role="alert">
+                        <h5 class="alert-heading">Sucesso!</h5>
+                        <p class="mb-0">Seu pagamento foi processado com sucesso.</p>
+                    </div>
+                    
+                    {% if payment_id %}
+                    <div class="mb-3">
+                        <small class="text-muted">ID do Pagamento: {{ payment_id }}</small>
+                    </div>
+                    {% endif %}
+                    
+                    {% if mp_payment_id %}
+                    <div class="mb-4">
+                        <small class="text-muted">ID da Transação: {{ mp_payment_id }}</small>
+                    </div>
+                    {% endif %}
+                    
+                    <p class="text-muted mb-4">
+                        Um email de confirmação foi enviado para você.<br>
+                        Você pode acompanhar seus pagamentos no painel do aluno.
+                    </p>
+                    
+                    <div class="d-grid gap-2">
+                        {% if current_user.user_type == 'student' %}
+                        <a href="{{ url_for('student.student_dashboard') }}" class="btn btn-primary">
+                            <i class="fas fa-home me-2"></i>Voltar ao Painel
+                        </a>
+                        {% else %}
+                        <a href="{{ url_for('main.index') }}" class="btn btn-primary">
+                            <i class="fas fa-home me-2"></i>Página Inicial
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
