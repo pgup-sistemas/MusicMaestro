@@ -106,6 +106,18 @@
                             </div>
                             
                             <div class="col-md-6 mb-3">
+                                {{ form.age.label(class="form-label fw-bold") }}
+                                {{ form.age(class="form-control", placeholder="Sua idade") }}
+                                {% if form.age.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {% for error in form.age.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
                                 {{ form.instrument.label(class="form-label fw-bold") }}
                                 {{ form.instrument(class="form-control", placeholder="Piano, Violão, Canto...") }}
                                 {% if form.instrument.errors %}
@@ -114,9 +126,7 @@
                                     </div>
                                 {% endif %}
                             </div>
-                        </div>
-                        
-                        <div class="row">
+                            
                             <div class="col-md-6 mb-3">
                                 {{ form.experience_level.label(class="form-label fw-bold") }}
                                 {{ form.experience_level(class="form-select" + (" is-invalid" if form.experience_level.errors else "")) }}
@@ -126,7 +136,9 @@
                                     </div>
                                 {% endif %}
                             </div>
-                            
+                        </div>
+                        
+                        <div class="row">
                             <div class="col-md-6 mb-3">
                                 {{ form.preferred_date.label(class="form-label fw-bold") }}
                                 {{ form.preferred_date(class="form-control") }}
