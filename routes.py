@@ -803,9 +803,58 @@ def contact():
 
     return render_template('public/contact.html', form=form)
 
-@public.route('/experimental-class')
+@public.route('/experimental-class', methods=['GET', 'POST'])
 def experimental_class():
     form = ExperimentalClassForm()
+    
+    if form.validate_on_submit():
+        # Create experimental class record
+        experimental_class = ExperimentalClass(
+            name=form.name.data,
+            email=form.email.data,
+            phone=form.phone.data,
+            age=form.age.data,
+            instrument=form.instrument.data,
+            experience_level=form.experience_level.data,
+            preferred_date=form.preferred_date.data,
+            preferred_time=form.preferred_time.data,
+            notes=form.notes.data,
+            status='pending'
+        )
+        
+        db.session.add(experimental_class)
+        db.session.commit()
+        
+        # Send email notification to admin
+        try:
+            send_email(
+                subject='Nova Solicitação de Aula Experimental - Sol Maior',
+                body=f'''
+                Nova solicitação de aula experimental recebida:
+                
+                Nome: {form.name.data}
+                E-mail: {form.email.data}
+                Telefone: {form.phone.data}
+                Idade: {form.age.data}
+                Instrumento: {form.instrument.data}
+                Nível de Experiência: {form.experience_level.data}
+                Data Preferencial: {form.preferred_date.data if form.preferred_date.data else 'Não informado'}
+                Horário: {form.preferred_time.data if form.preferred_time.data else 'Não informado'}
+                
+                Observações:
+                {form.notes.data if form.notes.data else 'Nenhuma observação'}
+                
+                Acesse o painel administrativo para agendar a aula:
+                {request.url_root}admin/experimental-classes
+                ''',
+                recipients=['admin@solmaior.com']
+            )
+        except Exception as e:
+            current_app.logger.error(f'Error sending experimental class notification: {e}')
+        
+        flash('Solicitação enviada com sucesso! Entraremos em contato em até 24 horas.', 'success')
+        return redirect(url_for('public.experimental_class'))
+    
     return render_template('public/experimental_class.html', form=form)
 
 @public.route('/help')
