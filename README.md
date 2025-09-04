@@ -44,6 +44,10 @@ SECRET_KEY=sua_chave_secreta_muito_aleatoria
 PAYMENT_API_KEY=sua_chave_do_gateway
 PAYMENT_API_URL=https://api.gateway.com
 PAYMENT_WEBHOOK_URL=https://seu_site.com
+
+# Configurações do Mercado Pago
+MP_ACCESS_TOKEN=seu_access_token_do_mercado_pago
+MP_PUBLIC_KEY=sua_public_key_do_mercado_pago
 ```
 
 3. **Instale as dependências**:
@@ -119,10 +123,28 @@ Configure seu provedor de email nas variáveis de ambiente. Para Gmail:
 2. Gere uma senha de app específica
 3. Use essa senha na variável `MAIL_PASSWORD`
 
-### Gateway de Pagamento
-O sistema suporta integração com gateways de pagamento:
-- Configure as chaves de API nas variáveis de ambiente
-- Ajuste os webhooks para confirmação automática de pagamentos
+### Gateway de Pagamento - Mercado Pago
+O sistema está integrado com o Mercado Pago para processar pagamentos:
+
+**Configuração no Replit:**
+1. Acesse o painel de Secrets do Replit
+2. Adicione as seguintes chaves:
+   - `MP_ACCESS_TOKEN`: Token de acesso do Mercado Pago
+   - `MP_PUBLIC_KEY`: Chave pública do Mercado Pago
+
+**Para obter as credenciais:**
+1. Acesse [Mercado Pago Developers](https://www.mercadopago.com.br/developers)
+2. Faça login em sua conta
+3. Vá em "Suas credenciais"
+4. Para testes, use as "Credenciais de teste"
+5. Para produção, use as "Credenciais de produção"
+
+**Funcionalidades:**
+- Pagamento via cartão de crédito/débito
+- PIX
+- Boleto bancário
+- Confirmação automática de pagamentos via webhook
+- Notificações automáticas por email
 
 ### Backup do Banco
 Recomendamos backups regulares:

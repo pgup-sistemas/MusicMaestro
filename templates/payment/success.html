@@ -53,3 +53,41 @@
     </div>
 </div>
 {% endblock %}
+{% extends "base.html" %}
+{% block title %}Pagamento Aprovado{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card border-success">
+                <div class="card-header bg-success text-white text-center">
+                    <h3><i class="fas fa-check-circle me-2"></i>Pagamento Aprovado!</h3>
+                </div>
+                <div class="card-body text-center">
+                    <div class="alert alert-success">
+                        <h5>Seu pagamento foi processado com sucesso!</h5>
+                        {% if payment_id %}
+                            <p><strong>ID do Pagamento:</strong> {{ payment_id }}</p>
+                        {% endif %}
+                        {% if external_reference %}
+                            <p><strong>Referência:</strong> {{ external_reference }}</p>
+                        {% endif %}
+                    </div>
+                    
+                    <p>Obrigado por seu pagamento! Você receberá um email de confirmação em breve.</p>
+                    
+                    <div class="mt-4">
+                        <a href="{{ url_for('student.payments') }}" class="btn btn-primary">
+                            <i class="fas fa-list me-2"></i>Ver Meus Pagamentos
+                        </a>
+                        <a href="{{ url_for('student.dashboard') }}" class="btn btn-secondary ms-2">
+                            <i class="fas fa-home me-2"></i>Voltar ao Dashboard
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

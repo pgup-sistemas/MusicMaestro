@@ -32,3 +32,22 @@ class Config:
     PAYMENT_API_URL = os.environ.get('PAYMENT_API_URL')
     PAYMENT_WEBHOOK_URL = os.environ.get('PAYMENT_WEBHOOK_URL')
     PAYMENT_ENABLED = bool(os.environ.get('PAYMENT_ENABLED', 'false').lower() in ['true', '1', 'yes'])
+
+    # Mercado Pago Configuration
+    MP_ACCESS_TOKEN = os.environ.get('MP_ACCESS_TOKEN')
+    MP_PUBLIC_KEY = os.environ.get('MP_PUBLIC_KEY')
+    
+    # Auto-detect production environment
+    @staticmethod
+    def get_base_url():
+        # Produção no Replit (quando deployado)
+        if os.environ.get('REPLIT_DEPLOYMENT'):
+            return f"https://{os.environ.get('REPLIT_DEPLOYMENT')}"
+        
+        # Desenvolvimento no Replit
+        replit_domain = os.environ.get('REPLIT_DEV_DOMAIN')
+        if replit_domain:
+            return f"https://{replit_domain}"
+        
+        # Fallback para localhost
+        return "http://localhost:5000"

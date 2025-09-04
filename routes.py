@@ -11,13 +11,14 @@ from mercado_pago import mp_api
 from forms import *
 from utils import send_email, allowed_file
 from audit_logger import AuditLogger
+import json # Import json module
 
 # Create blueprints
 main = Blueprint('main', __name__)
 auth = Blueprint('auth', __name__, url_prefix='/auth')
 admin = Blueprint('admin', __name__, url_prefix='/admin')
 student_bp = Blueprint('student', __name__, url_prefix='/student')
-teacher_bp = Blueprint('teacher', __name__, url_prefix='/teacher')
+teacher_bp = Blueprint('teacher', __name__, url_for='/teacher')
 public = Blueprint('public', __name__, url_prefix='/public')
 
 def register_blueprints(app):
@@ -774,7 +775,7 @@ def landing():
     # Get latest 3 public news for homepage
     featured_news = News.query.filter_by(is_public=True, featured=True).order_by(News.publish_date.desc()).limit(1).all()
     recent_news = News.query.filter_by(is_public=True).order_by(News.publish_date.desc()).limit(6).all()
-    
+
     return render_template('public/landing.html', featured_news=featured_news, recent_news=recent_news)
 
 @public.route('/contact', methods=['GET', 'POST'])
@@ -807,7 +808,7 @@ def contact():
 @public.route('/experimental-class', methods=['GET', 'POST'])
 def experimental_class():
     form = ExperimentalClassForm()
-    
+
     if form.validate_on_submit():
         # Create experimental class record
         experimental_class = ExperimentalClass(
@@ -822,17 +823,17 @@ def experimental_class():
             notes=form.notes.data,
             status='pending'
         )
-        
+
         db.session.add(experimental_class)
         db.session.commit()
-        
+
         # Send email notification to admin
         try:
             send_email(
                 subject='Nova Solicitação de Aula Experimental - Sol Maior',
                 body=f'''
                 Nova solicitação de aula experimental recebida:
-                
+
                 Nome: {form.name.data}
                 E-mail: {form.email.data}
                 Telefone: {form.phone.data}
@@ -841,10 +842,10 @@ def experimental_class():
                 Nível de Experiência: {form.experience_level.data}
                 Data Preferencial: {form.preferred_date.data if form.preferred_date.data else 'Não informado'}
                 Horário: {form.preferred_time.data if form.preferred_time.data else 'Não informado'}
-                
+
                 Observações:
                 {form.notes.data if form.notes.data else 'Nenhuma observação'}
-                
+
                 Acesse o painel administrativo para agendar a aula:
                 {request.url_root}admin/experimental-classes
                 ''',
@@ -852,10 +853,10 @@ def experimental_class():
             )
         except Exception as e:
             current_app.logger.error(f'Error sending experimental class notification: {e}')
-        
+
         flash('Solicitação enviada com sucesso! Entraremos em contato em até 24 horas.', 'success')
         return redirect(url_for('public.experimental_class'))
-    
+
     return render_template('public/experimental_class.html', form=form)
 
 @public.route('/help')
@@ -2018,17 +2019,17 @@ def news_list():
     if current_user.user_type not in ['admin', 'secretary']:
         flash('Acesso negado.', 'danger')
         return redirect(url_for('main.index'))
-    
+
     page = request.args.get('page', 1, type=int)
     category = request.args.get('category', '')
-    
+
     query = News.query.order_by(News.created_at.desc())
-    
+
     if category:
         query = query.filter_by(category=category)
-    
+
     news = query.paginate(page=page, per_page=20, error_out=False)
-    
+
     return render_template('admin/news_list.html', news=news, category=category)
 
 @admin.route('/news/add', methods=['GET', 'POST'])
@@ -2037,9 +2038,9 @@ def news_add():
     if current_user.user_type not in ['admin', 'secretary']:
         flash('Acesso negado.', 'danger')
         return redirect(url_for('main.index'))
-    
+
     form = NewsForm()
-    
+
     if form.validate_on_submit():
         news_article = News(
             title=form.title.data,
@@ -2051,13 +2052,13 @@ def news_add():
             is_public=form.is_public.data,
             publish_date=form.publish_date.data
         )
-        
+
         db.session.add(news_article)
         db.session.commit()
-        
+
         flash('Notícia criada com sucesso!', 'success')
         return redirect(url_for('admin.news_list'))
-    
+
     return render_template('admin/news_form.html', form=form, title='Nova Notícia')
 
 @admin.route('/news/edit/<int:news_id>', methods=['GET', 'POST'])
@@ -2066,10 +2067,10 @@ def news_edit(news_id):
     if current_user.user_type not in ['admin', 'secretary']:
         flash('Acesso negado.', 'danger')
         return redirect(url_for('main.index'))
-    
+
     news_article = News.query.get_or_404(news_id)
     form = NewsForm(obj=news_article)
-    
+
     if form.validate_on_submit():
         news_article.title = form.title.data
         news_article.summary = form.summary.data
@@ -2079,26 +2080,26 @@ def news_edit(news_id):
         news_article.is_public = form.is_public.data
         news_article.publish_date = form.publish_date.data
         news_article.updated_at = datetime.utcnow()
-        
+
         db.session.commit()
-        
+
         flash('Notícia atualizada com sucesso!', 'success')
         return redirect(url_for('admin.news_list'))
-    
+
     return render_template('admin/news_form.html', form=form, title='Editar Notícia', news=news_article)
 
 @admin.route('/news/delete/<int:news_id>', methods=['POST'])
-@login_required  
+@login_required
 def news_delete(news_id):
     if current_user.user_type not in ['admin', 'secretary']:
         flash('Acesso negado.', 'danger')
         return redirect(url_for('main.index'))
-    
+
     news_article = News.query.get_or_404(news_id)
-    
+
     db.session.delete(news_article)
     db.session.commit()
-    
+
     flash('Notícia excluída com sucesso!', 'success')
     return redirect(url_for('admin.news_list'))
 
@@ -2108,7 +2109,7 @@ def news_view(news_id):
     if current_user.user_type not in ['admin', 'secretary']:
         flash('Acesso negado.', 'danger')
         return redirect(url_for('main.index'))
-        
+
     news_article = News.query.get_or_404(news_id)
     return render_template('admin/news_view.html', news=news_article)
 
@@ -2123,14 +2124,14 @@ def create_payment(payment_id):
     Cria uma preferência de pagamento no Mercado Pago
     """
     payment = Payment.query.get_or_404(payment_id)
-    
+
     # Verificar se o usuário pode acessar este pagamento
     if current_user.user_type == 'student':
         student = Student.query.filter_by(user_id=current_user.id).first()
         if not student or payment.student_id != student.id:
             flash('Acesso negado.', 'danger')
             return redirect(url_for('main.index'))
-    
+
     try:
         # Criar item para o Mercado Pago
         items = [{
@@ -2141,7 +2142,7 @@ def create_payment(payment_id):
             "unit_price": float(payment.amount),
             "currency_id": "BRL"
         }]
-        
+
         # Informações do pagador
         student = Student.query.get(payment.student_id)
         payer_info = {
@@ -2153,10 +2154,10 @@ def create_payment(payment_id):
                 "number": student.phone.replace("(", "").replace(")", "").replace("-", "").replace(" ", "")[:9] if student.phone else "999999999"
             }
         }
-        
+
         # Criar preferência no Mercado Pago
         preference_data = mp_api.create_preference(items, payer_info)
-        
+
         # Salvar transação no banco
         transaction = PaymentTransaction(
             payment_id=payment.id,
@@ -2170,14 +2171,14 @@ def create_payment(payment_id):
             external_reference=f"payment_{payment.id}",
             gateway_data=json.dumps(preference_data)
         )
-        
+
         db.session.add(transaction)
         db.session.commit()
-        
+
         # Redirecionar para o Mercado Pago (sandbox para desenvolvimento)
         payment_url = preference_data.get('sandbox_init_point', preference_data.get('init_point'))
         return redirect(payment_url)
-        
+
     except Exception as e:
         current_app.logger.error(f"Erro ao criar pagamento MP: {e}")
         flash('Erro ao processar pagamento. Tente novamente.', 'danger')
@@ -2190,36 +2191,36 @@ def payment_success():
     """
     payment_id = request.args.get('external_reference', '').replace('payment_', '')
     mp_payment_id = request.args.get('payment_id')
-    
+
     if payment_id and mp_payment_id:
         try:
             # Buscar informações do pagamento no MP
             payment_info = mp_api.get_payment_info(mp_payment_id)
-            
+
             # Atualizar transação
             transaction = PaymentTransaction.query.filter_by(
                 external_reference=f"payment_{payment_id}"
             ).first()
-            
+
             if transaction:
                 transaction.mp_payment_id = mp_payment_id
                 transaction.status = payment_info.get('status', 'pending')
                 transaction.gateway_data = json.dumps(payment_info)
-                
+
                 if payment_info.get('status') == 'approved':
                     transaction.completed_at = datetime.utcnow()
                     # Atualizar status do pagamento principal
                     transaction.payment.status = 'paid'
                     transaction.payment.payment_date = date.today()
                     transaction.payment.payment_method = 'Mercado Pago'
-                
+
                 db.session.commit()
-            
+
         except Exception as e:
             current_app.logger.error(f"Erro ao processar sucesso do pagamento: {e}")
-    
-    return render_template('payment/success.html', 
-                         payment_id=payment_id, 
+
+    return render_template('payment/success.html',
+                         payment_id=payment_id,
                          mp_payment_id=mp_payment_id)
 
 @main.route('/payment/failure')
@@ -2245,35 +2246,35 @@ def payment_webhook():
     try:
         notification_data = request.get_json()
         current_app.logger.info(f"Webhook MP recebido: {notification_data}")
-        
+
         payment_info = mp_api.process_webhook_notification(notification_data)
-        
+
         if payment_info:
             # Buscar transação pelo payment_id do MP
             mp_payment_id = str(payment_info.get('id'))
             transaction = PaymentTransaction.query.filter_by(
                 mp_payment_id=mp_payment_id
             ).first()
-            
+
             if not transaction:
                 # Buscar pela referência externa
                 external_ref = payment_info.get('external_reference', '')
                 transaction = PaymentTransaction.query.filter_by(
                     external_reference=external_ref
                 ).first()
-            
+
             if transaction:
                 transaction.mp_payment_id = mp_payment_id
                 transaction.status = payment_info.get('status', 'pending')
                 transaction.gateway_data = json.dumps(payment_info)
-                
+
                 if payment_info.get('status') == 'approved':
                     transaction.completed_at = datetime.utcnow()
                     # Atualizar pagamento principal
                     transaction.payment.status = 'paid'
                     transaction.payment.payment_date = date.today()
                     transaction.payment.payment_method = 'Mercado Pago'
-                    
+
                     # Enviar notificação por email
                     try:
                         student = Student.query.get(transaction.payment.student_id)
@@ -2281,25 +2282,25 @@ def payment_webhook():
                             subject='Pagamento Aprovado - Escola Sol Maior',
                             body=f'''
                             Olá {student.name},
-                            
+
                             Seu pagamento foi aprovado com sucesso!
-                            
+
                             Valor: R$ {transaction.amount}
                             Referência: {transaction.payment.reference_month.strftime('%B/%Y')}
                             ID da Transação: {mp_payment_id}
-                            
+
                             Obrigado por escolher a Escola Sol Maior!
                             ''',
                             recipients=[student.email]
                         )
                     except Exception as e:
                         current_app.logger.error(f'Erro ao enviar email de confirmação: {e}')
-                
+
                 db.session.commit()
                 current_app.logger.info(f"Transação atualizada: {transaction.id}")
-        
+
         return {'status': 'success'}, 200
-        
+
     except Exception as e:
         current_app.logger.error(f"Erro no webhook MP: {e}")
         return {'status': 'error'}, 400
